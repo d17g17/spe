@@ -5,6 +5,7 @@ import {
   useImportProxies, useProxyTestStatus, useCancelTest,
 } from './useProxies.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
+import { api } from '../../lib/api.js';
 
 const FILTERS = [
   { id: 'all', label: 'All' },
@@ -38,8 +39,12 @@ export default function ProxyManager({ onClose }) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [importText, setImportText] = useState('');
+  const [exportFilter, setExportFilter] = useState({ enabledOnly: false, workingOnly: false });
+  const [exportText, setExportText] = useState('');
+  const [exporting, setExporting] = useState(false);
   const [timeoutSec, setTimeoutSec] = useState(5);
   const [concurrency, setConcurrency] = useState(80);
   const [autoRemoveDead, setAutoRemoveDead] = useState(true);
@@ -120,6 +125,46 @@ export default function ProxyManager({ onClose }) {
     reader.onload = () => setImportText(String(reader.result || ''));
     reader.readAsText(file);
     e.target.value = '';
+  };
+
+  const refreshExport = async (filter = exportFilter) => {
+    setExporting(true);
+    try {
+      const text = await api.proxies.exportText(filter);
+      setExportText(text);
+      return text;
+    } catch (e) {
+      error(e.message);
+      return '';
+    } finally {
+      setExporting(false);
+    }
+  };
+  useEffect(() => {
+    if (showExport) refreshExport(exportFilter);
+  }, [showExport, exportFilter.enabledOnly, exportFilter.workingOnly]);
+  const onExportClipboard = async () => {
+    if (!exportText.trim()) return info('Nothing to export');
+    try {
+      await navigator.clipboard.writeText(exportText);
+      const count = exportText.split('\n').filter(Boolean).length;
+      success(`Copied ${count} proxies to clipboard`);
+    } catch (e) { error(e.message); }
+  };
+  const onExportFile = () => {
+    if (!exportText.trim()) return info('Nothing to export');
+    const blob = new Blob([exportText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const stamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `proxies-${stamp}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    const count = exportText.split('\n').filter(Boolean).length;
+    success(`Downloaded ${count} proxies`);
   };
 
   return (
@@ -237,8 +282,11 @@ export default function ProxyManager({ onClose }) {
         <div className="flex gap-2">
           <button onClick={() => setAll.mutate(true)} disabled={setAll.isPending} className="btn-secondary text-xs flex-1">Enable all</button>
           <button onClick={() => setAll.mutate(false)} disabled={setAll.isPending} className="btn-secondary text-xs flex-1">Disable all</button>
-          <button onClick={() => setShowImport((v) => !v)} className="btn-secondary text-xs flex-1">
+          <button onClick={() => { setShowImport((v) => !v); setShowExport(false); }} className="btn-secondary text-xs flex-1">
             {showImport ? 'Hide import' : 'Import'}
+          </button>
+          <button onClick={() => { setShowExport((v) => !v); setShowImport(false); }} className="btn-secondary text-xs flex-1">
+            {showExport ? 'Hide export' : 'Export'}
           </button>
           <button onClick={() => reload.mutate()} disabled={reload.isPending} className="btn-ghost text-xs" title="Reload proxy file from disk">↻</button>
           <button onClick={() => clearHealth.mutate()} disabled={clearHealth.isPending} className="btn-ghost text-xs" title="Clear cached rate-limit flags">⚠</button>
@@ -263,6 +311,53 @@ export default function ProxyManager({ onClose }) {
               <input ref={fileRef} type="file" accept=".txt,.csv,text/plain" className="hidden" onChange={onFile} />
               <button onClick={onImport} disabled={importProxies.isPending} className="btn-primary text-sm flex-1">
                 {importProxies.isPending ? 'Importing…' : 'Import & replace'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {showExport && (
+          <div className="space-y-2 border border-gray-800 rounded-md p-3 bg-gray-900/40">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div className="text-xs text-gray-400">
+                Format: <code className="text-gray-300">protocol://user:pass@ip:port</code> — re-importable.
+              </div>
+              <div className="flex flex-wrap gap-3 text-xs text-gray-300">
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={exportFilter.enabledOnly}
+                    onChange={(e) => setExportFilter((f) => ({ ...f, enabledOnly: e.target.checked }))}
+                  />
+                  Enabled only
+                </label>
+                <label className="flex items-center gap-1.5 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={exportFilter.workingOnly}
+                    onChange={(e) => setExportFilter((f) => ({ ...f, workingOnly: e.target.checked }))}
+                  />
+                  Working only
+                </label>
+              </div>
+            </div>
+            <textarea
+              value={exportText}
+              readOnly
+              onFocus={(e) => e.target.select()}
+              rows={5}
+              placeholder={exporting ? 'Loading…' : 'No proxies match'}
+              className="input w-full font-mono text-xs"
+            />
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] text-gray-500 mr-auto tabular-nums">
+                {exportText.split('\n').filter(Boolean).length} line(s)
+              </span>
+              <button onClick={onExportClipboard} disabled={exporting || !exportText.trim()} className="btn-secondary text-sm">
+                Copy
+              </button>
+              <button onClick={onExportFile} disabled={exporting || !exportText.trim()} className="btn-primary text-sm">
+                Download .txt
               </button>
             </div>
           </div>

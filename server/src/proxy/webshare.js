@@ -207,6 +207,27 @@ const healthInfo = (id) => {
   return { healthy: false, reason: h.reason, until: h.until };
 };
 
+// Export proxies in a re-importable text format.
+// Optional filter: { enabledOnly, protocol, healthyOnly, workingOnly }.
+// Each line: `protocol://user:pass@ip:port` (or `protocol://ip:port` if no creds).
+const exportText = (filter = {}) => {
+  const lines = [];
+  for (const p of proxies) {
+    if (filter.enabledOnly && disabledIds.has(p.id)) continue;
+    const t = testResults.get(p.id);
+    const h = healthInfo(p.id);
+    if (filter.healthyOnly && h.healthy === false) continue;
+    if (filter.workingOnly && (!t || !t.ok)) continue;
+    const proto = (t && t.ok && t.protocol) || p.protocol || 'http';
+    if (filter.protocol && proto !== filter.protocol) continue;
+    const auth = p.user && p.pass
+      ? `${encodeURIComponent(p.user)}:${encodeURIComponent(p.pass)}@`
+      : '';
+    lines.push(`${proto}://${auth}${p.ip}:${p.port}`);
+  }
+  return lines.join('\n');
+};
+
 const list = () => proxies.map((p) => {
   const t = testResults.get(p.id);
   return {
@@ -537,4 +558,5 @@ module.exports = {
   setGloballyEnabled,
   protocolSummary,
   importText,
+  exportText,
 };

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { formatRelative, formatMoney, formatDate } from '../../utils/format.js';
+import { formatRelative, formatDate } from '../../utils/format.js';
 import Flag from '../../components/Flag.jsx';
 import { useDeleteProfile, useFetchProfile } from './useProfiles.js';
 import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
@@ -29,8 +29,6 @@ export default function ProfileCard({ profile, compact = false }) {
   const [confirm, setConfirm] = useState(false);
   const ps = profile.personaState ?? 0;
   const dot = PERSONA_COLORS[ps] || PERSONA_COLORS[0];
-  const cs2Value = profile.cs2Inventory?.totalValueUsd;
-  const cashTotal = cs2Value != null ? Number(cs2Value) : null;
   const isPublic = profile.communityVisibilityState === 3;
   const medals = Array.isArray(profile.cs2Inventory?.medals) ? profile.cs2Inventory.medals : [];
   const refreshing = fetchProfile.isPending || fetchCs2.isPending;
@@ -70,18 +68,14 @@ export default function ProfileCard({ profile, compact = false }) {
           {!compact && (
             <>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
-                <span>
-                  <span className="text-gray-500">Cash:</span>{' '}
-                  <span className="text-emerald-300">{cashTotal != null ? formatMoney(cashTotal) : '—'}</span>
-                </span>
                 <span><span className="text-gray-500">Friends:</span> {profile.friendsCount ?? 0}</span>
+                <span><span className="text-gray-500">Updated:</span> {formatRelative(profile.updatedAt)}</span>
                 <span className="col-span-2 flex items-center gap-2 flex-wrap">
                   <span>
                     <span className="text-gray-500">Last badge:</span> {formatDate(profile.lastBadgeDate)}
                   </span>
                   {medals.length > 0 && <BadgesRow badges={medals} max={3} inline />}
                 </span>
-                <span><span className="text-gray-500">Updated:</span> {formatRelative(profile.updatedAt)}</span>
               </div>
             </>
           )}

@@ -62,6 +62,11 @@ export const api = {
     importText: (text) => unwrap(apiClient.post('/proxies/import', text, {
       headers: { 'Content-Type': 'text/plain' },
     })),
+    exportText: (params = {}) => apiClient.get('/proxies/export', {
+      params,
+      responseType: 'text',
+      transformResponse: (v) => v,
+    }).then((r) => r.data),
   },
   health: () => unwrap(apiClient.get('/health')),
 };

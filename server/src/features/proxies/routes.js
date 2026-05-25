@@ -14,6 +14,7 @@ router.post('/test', c.testAll);
 router.post('/test/cancel', c.testCancel);
 router.get('/test/status', c.testStatus);
 router.post('/import', express.text({ type: '*/*', limit: '2mb' }), c.importProxies);
+router.get('/export', c.exportProxies);
 router.post('/:id/test', c.testOne);
 router.put('/global', c.setGlobal);
 router.put('/all', c.setAll);

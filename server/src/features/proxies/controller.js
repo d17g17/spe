@@ -127,7 +127,19 @@ const importProxies = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const exportProxies = async (req, res, next) => {
+  try {
+    const enabledOnly = req.query?.enabledOnly === 'true';
+    const workingOnly = req.query?.workingOnly === 'true';
+    const healthyOnly = req.query?.healthyOnly === 'true';
+    const protocol = req.query?.protocol === 'http' || req.query?.protocol === 'socks5'
+      ? req.query.protocol : undefined;
+    const text = webshare.exportText({ enabledOnly, workingOnly, healthyOnly, protocol });
+    res.type('text/plain').send(text);
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   list, setOne, setAll, setGlobal, reload, clearHealth, testOne, testAll, testStatus, testCancel,
-  importProxies, keepWorking, removeDead,
+  importProxies, exportProxies, keepWorking, removeDead,
 };

@@ -11,22 +11,18 @@ import { useProfilesList } from './useProfiles.js';
 const PAGE_SIZE = 60;
 
 const SORTS = [
-  { value: 'updatedAt:DESC', label: 'Recently updated' },
-  { value: 'createdAt:DESC', label: 'Recently added' },
-  { value: 'name:ASC', label: 'Name (A→Z)' },
-  { value: 'friendsCount:DESC', label: 'Most friends' },
-  { value: 'playtime2Weeks:DESC', label: 'Most 2-week playtime' },
-  { value: 'lastLogoff:DESC', label: 'Most recently online' },
+  { value: 'smart:DESC', label: 'Smart (value × badge age)' },
   { value: 'inventoryValue:DESC', label: 'Most expensive inventory' },
   { value: 'oldestBadge:ASC', label: 'Oldest last badge' },
-  { value: 'veteranMix:DESC', label: 'Veteran mix (value × badge age)' },
+  { value: 'createdAt:DESC', label: 'Recently added' },
+  { value: 'name:ASC', label: 'Name (A→Z)' },
 ];
 
 export default function ProfilesPage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(0);
-  const [sort, setSort] = useState('updatedAt:DESC');
+  const [sort, setSort] = useState('smart:DESC');
   const [filters, setFilters] = useState({});
 
   useEffect(() => {
@@ -53,7 +49,12 @@ export default function ProfilesPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-7xl mx-auto">
       <ProfileFetchForm />
-      <BulkFetchBar />
+      <BulkFetchBar
+        sortBy={sortBy}
+        sortDir={sortDir}
+        filters={filters}
+        search={debounced}
+      />
 
       <div className="flex flex-col md:flex-row gap-3 items-stretch">
         <div className="flex-1 min-w-0">

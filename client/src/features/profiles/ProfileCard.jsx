@@ -1,11 +1,13 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { formatRelative, formatMoney, formatDate, countryFlag } from '../../utils/format.js';
+import { formatRelative, formatMoney, formatDate } from '../../utils/format.js';
+import Flag from '../../components/Flag.jsx';
 import { useDeleteProfile, useFetchProfile } from './useProfiles.js';
 import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import InventoryBadge from '../cs2/InventoryBadge.jsx';
 import BadgesRow from '../cs2/BadgesRow.jsx';
+import { LevelBadge, YearsBadge } from './SteamBadges.jsx';
 import { useState } from 'react';
 import ConfirmationDialog from '../../components/ConfirmationDialog.jsx';
 
@@ -27,9 +29,8 @@ export default function ProfileCard({ profile, compact = false }) {
   const [confirm, setConfirm] = useState(false);
   const ps = profile.personaState ?? 0;
   const dot = PERSONA_COLORS[ps] || PERSONA_COLORS[0];
-  const cash = profile.cs2Inventory?.totalValueUsd;
-  const cashWithStickers = profile.cs2Inventory?.totalValueWithStickersUsd;
-  const showCashSticker = cashWithStickers != null && Number(cashWithStickers) > Number(cash || 0);
+  const cs2Value = profile.cs2Inventory?.totalValueUsd;
+  const cashTotal = cs2Value != null ? Number(cs2Value) : null;
   const isPublic = profile.communityVisibilityState === 3;
   const medals = Array.isArray(profile.cs2Inventory?.medals) ? profile.cs2Inventory.medals : [];
   const refreshing = fetchProfile.isPending || fetchCs2.isPending;
@@ -60,26 +61,18 @@ export default function ProfileCard({ profile, compact = false }) {
         </Link>
         <div className="flex-1 min-w-0">
           <Link to={`/profile/${profile.steamId}`} className="font-medium text-gray-100 truncate hover:text-sky-300 flex items-center gap-1.5">
-            {profile.country && (
-              <span title={profile.country} className="text-base leading-none">{countryFlag(profile.country)}</span>
-            )}
+            {profile.country && <Flag code={profile.country} size={20} />}
             <span className="truncate">{profile.name || profile.steamId}</span>
+            {profile.steamLevel != null && <LevelBadge level={profile.steamLevel} />}
+            {profile.timeCreated && <YearsBadge timeCreated={profile.timeCreated} />}
           </Link>
           <div className="text-xs text-gray-500 truncate">{profile.steamId}</div>
           {!compact && (
             <>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
-                <span className="relative pt-2 inline-block">
+                <span>
                   <span className="text-gray-500">Cash:</span>{' '}
-                  <span className="text-emerald-300">{cash != null ? formatMoney(cash) : '—'}</span>
-                  {showCashSticker && (
-                    <span
-                      className="absolute -top-0.5 right-0 text-[9px] text-sky-400 leading-none"
-                      title={`With sticker prices: ${formatMoney(cashWithStickers)}`}
-                    >
-                      {formatMoney(cashWithStickers)}
-                    </span>
-                  )}
+                  <span className="text-emerald-300">{cashTotal != null ? formatMoney(cashTotal) : '—'}</span>
                 </span>
                 <span><span className="text-gray-500">Friends:</span> {profile.friendsCount ?? 0}</span>
                 <span className="col-span-2 flex items-center gap-2 flex-wrap">
@@ -141,3 +134,4 @@ export default function ProfileCard({ profile, compact = false }) {
     </motion.div>
   );
 }
+

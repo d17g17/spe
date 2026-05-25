@@ -6,7 +6,7 @@ const { sequelize, models } = require('../../db');
 const SORTABLE = new Set([
   'updatedAt', 'createdAt', 'name', 'friendsCount', 'playtime2Weeks',
   'lastLogoff', 'lastBadgeDate', 'country', 'personaState',
-  'inventoryValue', 'oldestBadge', 'veteranMix',
+  'inventoryValue', 'oldestBadge', 'veteranMix', 'smart',
 ]);
 
 const findById = (steamId) => models.Profile.findByPk(steamId);
@@ -55,7 +55,7 @@ const buildOrder = (sortBy, sortDir) => {
       ['lastBadgeDate', 'ASC'],
     ];
   }
-  if (key === 'veteranMix') {
+  if (key === 'veteranMix' || key === 'smart') {
     return [
       [sequelize.literal(
         "(COALESCE(`cs2Inventory`.`total_value_usd`, 0) * COALESCE(julianday('now') - julianday(`Profile`.`lastBadgeDate`), 0))"
@@ -87,6 +87,19 @@ const list = async ({
   return { rows: rows.map((r) => r.toJSON()), total: count };
 };
 
+const listIds = async ({ sortBy, sortDir, filters = {}, search = '' } = {}) => {
+  const where = buildWhere(filters, search);
+  const rows = await models.Profile.findAll({
+    where,
+    include: [{ model: models.CS2Inventory, as: 'cs2Inventory', required: false, attributes: [] }],
+    attributes: ['steamId'],
+    order: buildOrder(sortBy, sortDir),
+    subQuery: false,
+    raw: true,
+  });
+  return rows.map((r) => r.steamId);
+};
+
 const findWithInventoryError = async (steamIds) => {
   if (!Array.isArray(steamIds) || steamIds.length === 0) return [];
   const rows = await models.Profile.findAll({
@@ -96,4 +109,4 @@ const findWithInventoryError = async (steamIds) => {
   return rows.map((r) => r.toJSON());
 };
 
-module.exports = { findById, upsert, deleteById, deleteAll, list, findWithInventoryError, sequelize };
+module.exports = { findById, upsert, deleteById, deleteAll, list, listIds, findWithInventoryError, sequelize };

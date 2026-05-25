@@ -39,6 +39,8 @@ module.exports = (sequelize, DataTypes) => {
       friendsCount: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
       playtime2Weeks: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
       lastBadgeDate: { type: DataTypes.DATE, allowNull: true },
+      steamLevel: { type: DataTypes.INTEGER, allowNull: true, field: 'steam_level' },
+      timeCreated: { type: DataTypes.DATE, allowNull: true, field: 'time_created' },
       badges: { type: DataTypes.JSON, allowNull: true },
       vacBanned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       gameBanned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },

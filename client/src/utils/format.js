@@ -41,10 +41,10 @@ export const formatDate = (date) => {
   return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 };
 
-export const countryFlag = (code) => {
-  if (!code || typeof code !== 'string' || code.length !== 2) return '';
-  const cc = code.toUpperCase();
-  if (!/^[A-Z]{2}$/.test(cc)) return '';
-  const base = 0x1f1e6;
-  return String.fromCodePoint(base + cc.charCodeAt(0) - 65, base + cc.charCodeAt(1) - 65);
+export const countryFlagUrl = (code, size = 24) => {
+  if (!code || typeof code !== 'string' || code.length !== 2) return null;
+  const cc = code.toLowerCase();
+  if (!/^[a-z]{2}$/.test(cc)) return null;
+  const w = size <= 16 ? 16 : size <= 20 ? 20 : size <= 24 ? 24 : size <= 32 ? 32 : 40;
+  return `https://flagcdn.com/w${w}/${cc}.png`;
 };

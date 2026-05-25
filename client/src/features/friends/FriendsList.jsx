@@ -1,13 +1,15 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useFriends } from './useFriends.js';
 import { useFetchFriends } from './useFetchFriends.js';
 import ProfileCard from '../profiles/ProfileCard.jsx';
 import SearchBar from '../profiles/SearchBar.jsx';
 import FriendStatistics from './FriendStatistics.jsx';
 import { useNotifications } from '../../state/NotificationContext.jsx';
+import BulkResultDialog from '../../components/BulkResultDialog.jsx';
 import {
   useBulkInventoryStatus, useStartBulkInventory, useBulkInventorySocket,
 } from '../cs2/useBulkInventory.js';
+import { speedPercent } from '../../utils/concurrency.js';
 
 const SORTS = [
   { value: 'friendSince:DESC', label: 'Friends since (newest)' },
@@ -19,6 +21,8 @@ const SORTS = [
 export default function FriendsList({ steamId, fetchStatus }) {
   const [search, setSearch] = useState('');
   const [sort, setSort] = useState('friendSince:DESC');
+  const [bulkConcurrency, setBulkConcurrency] = useState(4);
+  const [bulkAdaptive, setBulkAdaptive] = useState(false);
   const friendsQuery = useFriends(steamId, { limit: 1000 });
   const fetchMut = useFetchFriends();
   const { success, error } = useNotifications();
@@ -61,6 +65,21 @@ export default function FriendsList({ steamId, fetchStatus }) {
     ? Math.round((bulk.processed / bulk.toFetch) * 100)
     : null;
 
+  const [report, setReport] = useState(null);
+  const prevBulkStatus = useRef(bulk.status);
+  useEffect(() => {
+    const prev = prevBulkStatus.current;
+    const cur = bulk.status;
+    if ((prev === 'starting' || prev === 'in_progress') && (cur === 'complete' || cur === 'error')) {
+      setReport({
+        title: cur === 'error' ? 'Bulk inventory error' : 'Bulk inventory complete',
+        summary: `${bulk.checked || 0} checked · ${bulk.private || 0} private · ${bulk.empty || 0} empty · ${bulk.errors || 0} failed · ${bulk.skipped || 0} cached`,
+        errors: Array.isArray(bulk.errorLog) ? bulk.errorLog : [],
+      });
+    }
+    prevBulkStatus.current = cur;
+  }, [bulk.status, bulk.checked, bulk.private, bulk.empty, bulk.errors, bulk.skipped, bulk.errorLog]);
+
   const onFetch = () => {
     fetchMut.mutate(steamId, {
       onSuccess: () => success('Friend fetch started'),
@@ -69,7 +88,7 @@ export default function FriendsList({ steamId, fetchStatus }) {
   };
 
   const onBulk = (force = false) => {
-    startBulk.mutate({ ownerId: steamId, force }, {
+    startBulk.mutate({ ownerId: steamId, force, concurrency: bulkConcurrency, adaptive: bulkAdaptive }, {
       onSuccess: () => success(force ? 'Bulk inventory refresh started' : 'Bulk inventory fetch started'),
       onError: (e) => error(e?.response?.data?.error || e.message),
     });
@@ -93,15 +112,51 @@ export default function FriendsList({ steamId, fetchStatus }) {
               ? `Inventories… ${bulkPct != null ? `${bulkPct}%` : ''} (${bulk.processed || 0}/${bulk.toFetch || 0})`
               : 'Fetch friend inventories'}
           </button>
-          {!bulkInProgress && (
-            <button
-              onClick={() => onBulk(true)}
-              disabled={startBulk.isPending || friends.length === 0}
-              className="btn-ghost text-sm"
-              title="Force refresh, ignore 24h cache"
+          {bulkInProgress && bulk.adaptive && (
+            <span
+              className="text-xs px-2 py-1 rounded border bg-emerald-700/30 border-emerald-500/60 text-emerald-200 font-semibold tabular-nums self-center"
+              title={`Adaptive concurrency · ${bulk.concurrency} workers (12 = 100%, 20 = 200%)`}
             >
-              Force refresh
-            </button>
+              ⚡ Adaptive · {speedPercent(bulk.concurrency)}% · {bulk.concurrency}
+            </span>
+          )}
+          {!bulkInProgress && (
+            <>
+              <button
+                type="button"
+                onClick={() => setBulkAdaptive((v) => !v)}
+                className={`text-xs px-2 py-1 rounded border ${bulkAdaptive
+                  ? 'bg-emerald-700/30 border-emerald-500/60 text-emerald-200'
+                  : 'bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700'}`}
+                title="Auto-tune concurrency. Speeds up when stable, backs off on rate limits."
+              >
+                {bulkAdaptive ? '⚡ Adaptive' : 'Adaptive: off'}
+              </button>
+              <label
+                className={`text-xs text-gray-400 flex items-center gap-2 ${bulkAdaptive ? 'opacity-50' : ''}`}
+                title={bulkAdaptive ? 'Disabled while Adaptive is on' : 'Number of friends to fetch in parallel (1-20)'}
+              >
+                <span>Concurrency</span>
+                <input
+                  type="range"
+                  min={1}
+                  max={20}
+                  value={bulkConcurrency}
+                  disabled={bulkAdaptive}
+                  onChange={(e) => setBulkConcurrency(Number(e.target.value))}
+                  className="w-28 accent-sky-500 disabled:cursor-not-allowed"
+                />
+                <span className="text-gray-200 tabular-nums w-5 text-center">{bulkConcurrency}</span>
+              </label>
+              <button
+                onClick={() => onBulk(true)}
+                disabled={startBulk.isPending || friends.length === 0}
+                className="btn-ghost text-sm"
+                title="Force refresh, ignore 24h cache"
+              >
+                Force refresh
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -147,6 +202,15 @@ export default function FriendsList({ steamId, fetchStatus }) {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filtered.map((f) => <ProfileCard key={f.steamId} profile={f} compact />)}
         </div>
+      )}
+
+      {report && (
+        <BulkResultDialog
+          title={report.title}
+          summary={report.summary}
+          errors={report.errors}
+          onClose={() => setReport(null)}
+        />
       )}
     </div>
   );

@@ -25,6 +25,37 @@ const listFriends = async (steamId, { limit = 1000, offset = 0 } = {}) => {
 const countFriends = (steamId) =>
   models.Friendship.count({ where: { profileSteamId: steamId } });
 
+const listFriendIds = async (steamId, { sortBy = 'friendSince', sortDir = 'DESC' } = {}) => {
+  const dir = String(sortDir).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+  let order;
+  let include;
+  if (sortBy === 'name') {
+    include = [{ model: models.Profile, as: 'friend', attributes: [], required: false }];
+    order = [[sequelize.literal('`friend`.`name`'), dir]];
+  } else if (sortBy === 'friendsCount') {
+    include = [{ model: models.Profile, as: 'friend', attributes: [], required: false }];
+    order = [[sequelize.literal('`friend`.`friendsCount`'), dir]];
+  } else if (sortBy === 'inventoryValue') {
+    include = [{
+      model: models.Profile, as: 'friend', attributes: [], required: false,
+      include: [{ model: models.CS2Inventory, as: 'cs2Inventory', attributes: [], required: false }],
+    }];
+    order = [[sequelize.literal("COALESCE(`friend->cs2Inventory`.`total_value_usd`, 0)"), dir]];
+  } else {
+    include = undefined;
+    order = [['friendSince', dir]];
+  }
+  const rows = await models.Friendship.findAll({
+    where: { profileSteamId: steamId },
+    attributes: ['friendSteamId'],
+    include,
+    order,
+    raw: true,
+    subQuery: false,
+  });
+  return rows.map((r) => r.friendSteamId);
+};
+
 const replaceFriendships = async (steamId, friendships) => {
   await sequelize.transaction(async (t) => {
     await models.Friendship.destroy({ where: { profileSteamId: steamId }, transaction: t });
@@ -80,6 +111,7 @@ const existingProfileIds = async (steamIds) => {
 
 module.exports = {
   listFriends,
+  listFriendIds,
   countFriends,
   replaceFriendships,
   bulkInsertPlaceholders,

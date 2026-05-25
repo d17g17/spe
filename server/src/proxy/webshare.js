@@ -80,10 +80,24 @@ const loadState = () => {
       for (const id of parsed.disabled) disabledIds.add(id);
     }
     if (typeof parsed.proxiesEnabled === 'boolean') proxiesEnabled = parsed.proxiesEnabled;
-    if (parsed.protocols && typeof parsed.protocols === 'object') {
+    if (parsed.testResults && typeof parsed.testResults === 'object') {
+      for (const [id, r] of Object.entries(parsed.testResults)) {
+        if (!r || typeof r !== 'object') continue;
+        const proto = normalizeProto(r.protocol);
+        testResults.set(id, {
+          ok: Boolean(r.ok),
+          protocol: proto || null,
+          latencyMs: Number.isFinite(r.latencyMs) ? r.latencyMs : null,
+          error: r.error || null,
+          at: Number.isFinite(r.at) ? r.at : null,
+          perProto: r.perProto || null,
+        });
+      }
+    } else if (parsed.protocols && typeof parsed.protocols === 'object') {
+      // legacy
       for (const [id, proto] of Object.entries(parsed.protocols)) {
         const n = normalizeProto(proto);
-        if (n) testResults.set(id, { ok: true, protocol: n, latencyMs: null, at: null, persisted: true });
+        if (n) testResults.set(id, { ok: true, protocol: n, latencyMs: null, at: null });
       }
     }
   } catch (_) { /* first run */ }
@@ -91,15 +105,21 @@ const loadState = () => {
 
 const saveState = () => {
   try {
-    const protocols = {};
+    const persistedResults = {};
     for (const [id, r] of testResults.entries()) {
-      if (r.ok && r.protocol) protocols[id] = r.protocol;
+      persistedResults[id] = {
+        ok: !!r.ok,
+        protocol: r.protocol || null,
+        latencyMs: r.latencyMs ?? null,
+        error: r.error || null,
+        at: r.at || null,
+      };
     }
     fs.mkdirSync(path.dirname(STATE_FILE), { recursive: true });
     fs.writeFileSync(STATE_FILE, JSON.stringify({
       disabled: [...disabledIds],
       proxiesEnabled,
-      protocols,
+      testResults: persistedResults,
     }, null, 2));
   } catch (err) {
     logger.warn(`proxy state save failed: ${err.message}`);
@@ -158,21 +178,25 @@ const isHealthy = (id) => {
 const markDead = (id) => health.set(id, { until: Date.now() + HEALTH_DEAD_MS, reason: 'dead' });
 const markRateLimited = (id) => health.set(id, { until: Date.now() + HEALTH_RATE_LIMITED_MS, reason: 'rate-limited' });
 
-const pick = () => {
+const latencyOf = (id) => {
+  const t = testResults.get(id);
+  return t && t.ok && Number.isFinite(t.latencyMs) ? t.latencyMs : Number.POSITIVE_INFINITY;
+};
+
+const pick = (excludeIds = null) => {
   if (proxies.length === 0) return null;
-  const enabled = proxies.filter((p) => !disabledIds.has(p.id));
+  const enabled = proxies.filter((p) => !disabledIds.has(p.id) && (!excludeIds || !excludeIds.has(p.id)));
   if (enabled.length === 0) return null;
   const tested = enabled.filter((p) => {
     const t = testResults.get(p.id);
     return t && t.ok;
   });
   const pool = tested.length > 0 ? tested : enabled;
-  for (let i = 0; i < pool.length; i++) {
-    const p = pool[(cursor + i) % pool.length];
-    cursor = (cursor + 1) % pool.length;
+  const sorted = pool.slice().sort((a, b) => latencyOf(a.id) - latencyOf(b.id));
+  for (const p of sorted) {
     if (isHealthy(p.id)) return p;
   }
-  return pool[cursor++ % pool.length];
+  return sorted[0];
 };
 
 const agent = (proxy) => makeAgent(proxy, proxy.protocol || 'http');

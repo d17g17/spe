@@ -28,7 +28,9 @@ const stats = async (_req, res, next) => {
 const bulkStart = async (req, res, next) => {
   try {
     const force = req.query?.force === 'true' || req.body?.force === true;
-    const state = await bulk.start(req.params.id, { force });
+    const concurrency = req.body?.concurrency != null ? Number(req.body.concurrency) : undefined;
+    const adaptive = req.body?.adaptive === true;
+    const state = await bulk.start(req.params.id, { force, concurrency, adaptive });
     res.json(state);
   } catch (err) { next(err); }
 };

@@ -28,6 +28,7 @@ const summaryToDbShape = (s) => {
     profileState: s.profilestate ?? null,
     personaState: s.personastate ?? null,
     lastLogoff: toDateOrNull(s.lastlogoff),
+    timeCreated: toDateOrNull(s.timecreated),
   };
 };
 
@@ -49,6 +50,7 @@ const badgesToShape = (badgeData) => {
   if (!badgeData || !Array.isArray(badgeData.badges)) {
     return {
       lastBadgeDate: null,
+      steamLevel: badgeData?.player_level ?? null,
       has2025ServiceMedal: false,
       hasPremierSeasonOneMedal: false,
       hasPremierSeasonTwoMedal: false,
@@ -68,6 +70,7 @@ const badgesToShape = (badgeData) => {
   }
   return {
     lastBadgeDate: latest ? new Date(latest * 1000) : null,
+    steamLevel: badgeData.player_level ?? null,
     has2025ServiceMedal: has2025,
     hasPremierSeasonOneMedal: s1,
     hasPremierSeasonTwoMedal: s2,

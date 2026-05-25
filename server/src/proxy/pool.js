@@ -30,10 +30,11 @@ const pickStrategy = (url, override) => {
 const requestDirect = (opts) =>
   axios({ ...opts, timeout: opts.timeout || DEFAULT_TIMEOUT, proxy: false });
 
-const requestViaWebshare = async (opts) => {
+const requestViaWebshare = async (opts, usedIds) => {
   if (!webshare.isGloballyEnabled()) return requestDirect(opts);
-  const proxy = webshare.pick();
+  const proxy = webshare.pick(usedIds);
   if (!proxy) return requestDirect(opts);
+  if (usedIds) usedIds.add(proxy.id);
   try {
     return await axios({
       ...opts,
@@ -85,12 +86,13 @@ const annotate = (err, strategy) => {
 const request = async (opts) => {
   const strategy = pickStrategy(opts.url, opts.strategy);
   const maxAttempts = opts.noRetry ? 1 : MAX_RETRIES;
+  const usedIds = strategy === 'webshare' ? new Set() : null;
   let lastErr;
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const res = strategy === 'suborbit'
         ? await requestViaSuborbit(opts)
-        : await requestViaWebshare(opts);
+        : await requestViaWebshare(opts, usedIds);
       return res;
     } catch (err) {
       lastErr = annotate(err, strategy);

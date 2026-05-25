@@ -84,28 +84,34 @@ const run = async (steamId) => {
   let processed = 0;
   let errors = 0;
   const batches = chunk(friendIds, config.friendBatchSize);
+  const BATCH_CONCURRENCY = 4;
 
-  for (const batch of batches) {
-    try {
-      const [summaries, bans] = await Promise.all([
-        steamApi.getPlayerSummaries(batch).catch(() => []),
-        steamApi.getPlayerBans(batch).catch(() => []),
-      ]);
-      const bansById = new Map(bans.map((b) => [b.SteamId, b]));
-      const shapes = summaries.map((s) => {
-        const shape = transform.summaryToDbShape(s);
-        const banShape = transform.bansToDbShape(bansById.get(s.steamid));
-        return { ...shape, ...banShape };
-      });
-      await repo.bulkUpsertProfiles(shapes);
-      processed += batch.length;
-    } catch (err) {
-      errors += batch.length;
-      logger.warn(`friend batch failed: ${err.message}`);
+  let cursor = 0;
+  const worker = async () => {
+    while (cursor < batches.length) {
+      const batch = batches[cursor++];
+      try {
+        const [summaries, bans] = await Promise.all([
+          steamApi.getPlayerSummaries(batch).catch(() => []),
+          steamApi.getPlayerBans(batch).catch(() => []),
+        ]);
+        const bansById = new Map(bans.map((b) => [b.SteamId, b]));
+        const shapes = summaries.map((s) => {
+          const shape = transform.summaryToDbShape(s);
+          const banShape = transform.bansToDbShape(bansById.get(s.steamid));
+          return { ...shape, ...banShape };
+        });
+        await repo.bulkUpsertProfiles(shapes);
+        processed += batch.length;
+      } catch (err) {
+        errors += batch.length;
+        logger.warn(`friend batch failed: ${err.message}`);
+      }
+      setStatus(steamId, { processed, errors });
+      emit(steamId, 'progress', getStatus(steamId));
     }
-    setStatus(steamId, { processed, errors });
-    emit(steamId, 'progress', getStatus(steamId));
-  }
+  };
+  await Promise.all(Array.from({ length: Math.min(BATCH_CONCURRENCY, batches.length) }, () => worker()));
 
   const done = setStatus(steamId, { status: 'complete', processed, errors, total: friendIds.length });
   emit(steamId, 'complete', done);

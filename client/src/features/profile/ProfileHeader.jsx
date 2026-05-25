@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { formatRelative, personaLabel, visibilityLabel, formatMinutes, countryFlag } from '../../utils/format.js';
+import { formatRelative, personaLabel, visibilityLabel, formatMinutes } from '../../utils/format.js';
+import Flag from '../../components/Flag.jsx';
 import { lookupLocation, formatLocation } from '../../lib/locations.js';
 import CS2InventoryCard from '../cs2/CS2InventoryCard.jsx';
+import { LevelBadge, YearsBadge } from '../profiles/SteamBadges.jsx';
 
 const gcUrl = (profile) => {
   if (profile?.profileUrl) {
@@ -31,11 +33,11 @@ export default function ProfileHeader({ profile, onRefresh, onDelete, refreshing
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold flex items-center gap-2">
-                {profile.country && (
-                  <span title={profile.country} className="text-2xl leading-none">{countryFlag(profile.country)}</span>
-                )}
+              <h1 className="text-2xl font-semibold flex items-center gap-2 flex-wrap">
+                {profile.country && <Flag code={profile.country} size={32} />}
                 <span>{profile.name || profile.steamId}</span>
+                {profile.steamLevel != null && <LevelBadge level={profile.steamLevel} size="lg" />}
+                {profile.timeCreated && <YearsBadge timeCreated={profile.timeCreated} size="lg" />}
               </h1>
               {profile.realName && <div className="text-sm text-gray-400">{profile.realName}</div>}
               <div className="text-xs text-gray-500 mt-1">{profile.steamId}</div>

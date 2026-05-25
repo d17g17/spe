@@ -52,18 +52,14 @@ export default function CS2InventoryCard({ steamId, lastBadgeDate }) {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
-            <div className="relative pt-2">
+            <div>
               <div className="text-xs text-gray-500">Total value</div>
-              <div>{formatMoney(data.totalValueUsd)}</div>
-              {data.totalValueWithStickersUsd != null
-                && Number(data.totalValueWithStickersUsd) > Number(data.totalValueUsd) && (
-                <span
-                  className="absolute top-0 right-1 text-[10px] text-sky-400 leading-none"
-                  title={`Including sticker prices: ${formatMoney(data.totalValueWithStickersUsd)}`}
-                >
-                  {formatMoney(data.totalValueWithStickersUsd)}
-                </span>
-              )}
+              <div title={
+                data.totalValueWithStickersUsd != null
+                  && Number(data.totalValueWithStickersUsd) > Number(data.totalValueUsd)
+                  ? `Including sticker prices: ${formatMoney(data.totalValueWithStickersUsd)}`
+                  : undefined
+              }>{formatMoney(data.totalValueUsd)}</div>
             </div>
             <div>
               <div className="text-xs text-gray-500">Tradable items</div>
@@ -159,17 +155,10 @@ function ItemRow({ item }) {
         {tags.map((t) => <TraitTag key={t} trait={t} />)}
       </span>
       <span
-        className="shrink-0 tabular-nums text-right relative pr-1 pt-2 min-w-[5rem]"
+        className="shrink-0 tabular-nums text-right text-gray-300"
         title={showTotal ? tooltip : undefined}
       >
-        {showTotal && (
-          <span className="absolute -top-0.5 right-1 text-[9px] text-sky-400 leading-none">
-            {formatMoney(lineWithStickers)}
-          </span>
-        )}
-        <span className="text-gray-300">
-          {itemPrice == null ? <span className="text-gray-500">—</span> : formatMoney(itemPrice)}
-        </span>
+        {itemPrice == null ? <span className="text-gray-500">—</span> : formatMoney(itemPrice)}
       </span>
     </li>
   );

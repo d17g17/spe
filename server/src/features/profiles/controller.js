@@ -84,8 +84,13 @@ const fetchAllStart = async (req, res, next) => {
   try {
     const out = await bulkAll.start({
       concurrency: req.body?.concurrency,
+      adaptive: req.body?.adaptive === true,
       includeCs2: req.body?.includeCs2 !== false,
       force: req.body?.force === true,
+      sortBy: req.body?.sortBy,
+      sortDir: req.body?.sortDir,
+      filters: req.body?.filters,
+      search: req.body?.search,
     });
     res.status(202).json(out);
   } catch (err) { next(err); }

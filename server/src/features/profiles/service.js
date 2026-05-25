@@ -45,6 +45,7 @@ const fetchFullFromSteam = async (steamId) => {
     ...friendsField,
     playtime2Weeks: transform.recentToPlaytime2Weeks(recent),
     lastBadgeDate: badgeShape.lastBadgeDate,
+    steamLevel: badgeShape.steamLevel,
     badges: scraped,
   };
 };

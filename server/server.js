@@ -8,8 +8,13 @@ const { Server } = require('socket.io');
 
 const config = require('./src/config');
 const logger = require('./src/utils/logger');
+const diagnostics = require('./src/utils/diagnostics');
 const { initializeDatabase } = require('./src/db');
 const socketBus = require('./src/socket');
+
+// Run startup diagnostics BEFORE we try to mount anything. Prints every check
+// to the console so the user can see exactly what's wrong if the server fails.
+const DIAG = diagnostics.run();
 
 const healthRoutes = require('./src/features/health/routes');
 
@@ -45,21 +50,44 @@ app.get('/', (_req, res) => res.json({ message: 'Steam Profile App API' }));
 app.use('/api/health', healthRoutes);
 app.get('/health', (_req, res) => res.redirect(301, '/api/health'));
 
-try {
-  app.use('/api/profiles', require('./src/features/profiles/routes'));
-} catch (_) { /* not yet implemented */ }
-try {
-  app.use('/api/friends', require('./src/features/friends/routes'));
-} catch (_) { /* not yet implemented */ }
-try {
-  app.use('/api/cs2', require('./src/features/cs2/routes'));
-} catch (_) { /* not yet implemented */ }
-try {
-  app.use('/api/prices', require('./src/features/prices/routes'));
-} catch (_) { /* not yet implemented */ }
-try {
-  app.use('/api/proxies', require('./src/features/proxies/routes'));
-} catch (_) { /* not yet implemented */ }
+const mountResults = [];
+const mountFeature = (mountPath, routePath) => {
+  try {
+    app.use(mountPath, require(routePath));
+    mountResults.push({ mountPath, ok: true });
+    logger.info(`mounted ${mountPath}`);
+  } catch (err) {
+    mountResults.push({ mountPath, ok: false, error: err.message });
+    diagnostics.banner(`!! FAILED to mount ${mountPath}`);
+    console.error(`  Route file: ${routePath}`);
+    console.error(`  Error code: ${err.code || 'n/a'}`);
+    console.error(`  Message:    ${err.message}`);
+    if (err.url) console.error(`  URL:        ${err.url}`);
+    if (err.stack) {
+      console.error('  Stack:');
+      err.stack.split('\n').slice(0, 8).forEach((l) => console.error(`    ${l}`));
+    }
+    console.error('');
+    logger.error(`failed to mount ${mountPath}: ${err.message}`, { code: err.code });
+  }
+};
+mountFeature('/api/profiles', './src/features/profiles/routes');
+mountFeature('/api/friends',  './src/features/friends/routes');
+mountFeature('/api/cs2',      './src/features/cs2/routes');
+mountFeature('/api/prices',   './src/features/prices/routes');
+mountFeature('/api/proxies',  './src/features/proxies/routes');
+
+const mountFailed = mountResults.filter((r) => !r.ok);
+if (mountFailed.length > 0) {
+  diagnostics.banner('Route mount summary');
+  console.log(`  ${mountFailed.length}/${mountResults.length} route module(s) FAILED to load.`);
+  console.log(`  Failed: ${mountFailed.map((f) => f.mountPath).join(', ')}`);
+  console.log('  -> All endpoints under those prefixes will return 404 until fixed.');
+  console.log('  -> Scroll up to "Startup diagnostics" section for the root cause.');
+  console.log('');
+} else {
+  logger.info(`all ${mountResults.length} feature routes mounted successfully`);
+}
 
 app.use((err, _req, res, _next) => {
   if (res.headersSent) return;

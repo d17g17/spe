@@ -1,6 +1,7 @@
 'use strict';
 
 const service = require('./service');
+const bulkAll = require('./bulkAll');
 const logger = require('../../utils/logger');
 
 const list = async (req, res, next) => {
@@ -79,4 +80,26 @@ const inventoryErrors = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors };
+const fetchAllStart = async (req, res, next) => {
+  try {
+    const out = await bulkAll.start({
+      concurrency: req.body?.concurrency,
+      includeCs2: req.body?.includeCs2 !== false,
+      force: req.body?.force === true,
+    });
+    res.status(202).json(out);
+  } catch (err) { next(err); }
+};
+
+const fetchAllStatus = async (_req, res, next) => {
+  try { res.json(bulkAll.get()); } catch (err) { next(err); }
+};
+
+const fetchAllCancel = async (_req, res, next) => {
+  try { res.json(bulkAll.cancel()); } catch (err) { next(err); }
+};
+
+module.exports = {
+  list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors,
+  fetchAllStart, fetchAllStatus, fetchAllCancel,
+};

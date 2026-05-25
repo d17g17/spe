@@ -24,7 +24,7 @@ const getCachedMap = async (names) => {
   return new Map(rows.map((r) => [r.itemIdentifier, r]));
 };
 
-const upsertPrice = async (name, price) => {
+const upsertPrice = async (name, price, volume) => {
   const isC = isCase(name);
   await models.ItemPrice.upsert({
     itemIdentifier: name,
@@ -32,7 +32,32 @@ const upsertPrice = async (name, price) => {
     lastUpdated: new Date(),
     isCase: isC,
     fetchCount: 1,
+    volume: volume || 0,
   });
+};
+
+const PRICE_FETCH_CONCURRENCY = 10;
+const PRICE_FETCH_RETRIES = 1;
+
+const runPool = async (items, worker, concurrency) => {
+  const it = items[Symbol.iterator]();
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    for (;;) {
+      const next = it.next();
+      if (next.done) return;
+      await worker(next.value);
+    }
+  });
+  await Promise.all(workers);
+};
+
+const fetchWithRetry = async (name, retries) => {
+  for (let i = 0; i <= retries; i += 1) {
+    const r = await community.fetchMarketPrice(name);
+    if (r && r.price != null) return r;
+    if (i < retries) await new Promise((res) => setTimeout(res, 250 + Math.random() * 500));
+  }
+  return null;
 };
 
 const getPrices = async (names) => {
@@ -41,19 +66,19 @@ const getPrices = async (names) => {
   const stale = [];
   for (const name of names) {
     const row = cached.get(name);
-    if (row && isFresh(row)) out.set(name, Number(row.priceUsd));
+    if (row && isFresh(row)) out.set(name, { price: Number(row.priceUsd), volume: Number(row.volume) || 0 });
     else stale.push(name);
   }
-  await Promise.all(stale.map(async (name) => {
-    const price = await community.fetchMarketPrice(name);
-    if (price != null) {
-      await upsertPrice(name, price);
-      out.set(name, price);
+  await runPool(stale, async (name) => {
+    const fetched = await fetchWithRetry(name, PRICE_FETCH_RETRIES);
+    if (fetched && fetched.price != null) {
+      await upsertPrice(name, fetched.price, fetched.volume);
+      out.set(name, fetched);
     } else {
       const row = cached.get(name);
-      if (row) out.set(name, Number(row.priceUsd));
+      if (row) out.set(name, { price: Number(row.priceUsd), volume: Number(row.volume) || 0 });
     }
-  }));
+  }, PRICE_FETCH_CONCURRENCY);
   return out;
 };
 

@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { formatRelative, personaLabel, visibilityLabel, formatMinutes } from '../../utils/format.js';
+import { formatRelative, personaLabel, visibilityLabel, formatMinutes, countryFlag } from '../../utils/format.js';
 import { lookupLocation, formatLocation } from '../../lib/locations.js';
 import CS2InventoryCard from '../cs2/CS2InventoryCard.jsx';
+
+const gcUrl = (profile) => {
+  if (profile?.profileUrl) {
+    return profile.profileUrl.replace(/^https?:\/\/steamcommunity\.com/i, 'https://gcsteamcommunity.com');
+  }
+  return `https://gcsteamcommunity.com/profiles/${profile.steamId}`;
+};
 
 export default function ProfileHeader({ profile, onRefresh, onDelete, refreshing }) {
   const [location, setLocation] = useState(null);
@@ -24,14 +31,28 @@ export default function ProfileHeader({ profile, onRefresh, onDelete, refreshing
         <div className="flex-1 min-w-0">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <h1 className="text-2xl font-semibold">{profile.name || profile.steamId}</h1>
+              <h1 className="text-2xl font-semibold flex items-center gap-2">
+                {profile.country && (
+                  <span title={profile.country} className="text-2xl leading-none">{countryFlag(profile.country)}</span>
+                )}
+                <span>{profile.name || profile.steamId}</span>
+              </h1>
               {profile.realName && <div className="text-sm text-gray-400">{profile.realName}</div>}
               <div className="text-xs text-gray-500 mt-1">{profile.steamId}</div>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               {profile.profileUrl && (
                 <a href={profile.profileUrl} target="_blank" rel="noreferrer" className="btn-ghost text-sm">Steam ↗</a>
               )}
+              <a
+                href={gcUrl(profile)}
+                target="_blank"
+                rel="noreferrer"
+                className="btn-ghost text-sm"
+                title="Open this player on GamersClub.com.br"
+              >
+                GamersClub ↗
+              </a>
               <button onClick={onRefresh} disabled={refreshing} className="btn-secondary text-sm">
                 {refreshing ? 'Refreshing…' : 'Refresh'}
               </button>
@@ -59,7 +80,10 @@ export default function ProfileHeader({ profile, onRefresh, onDelete, refreshing
         </div>
       </div>
       <div className="mt-4">
-        <CS2InventoryCard steamId={profile.steamId} />
+        <CS2InventoryCard
+          steamId={profile.steamId}
+          lastBadgeDate={profile.lastBadgeDate}
+        />
       </div>
     </motion.div>
   );

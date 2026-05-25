@@ -5,6 +5,7 @@ import SearchBar from './SearchBar.jsx';
 import FilterPanel from './FilterPanel.jsx';
 import Pagination from './Pagination.jsx';
 import ProfileCard from './ProfileCard.jsx';
+import BulkFetchBar from './BulkFetchBar.jsx';
 import { useProfilesList } from './useProfiles.js';
 
 const PAGE_SIZE = 60;
@@ -16,6 +17,9 @@ const SORTS = [
   { value: 'friendsCount:DESC', label: 'Most friends' },
   { value: 'playtime2Weeks:DESC', label: 'Most 2-week playtime' },
   { value: 'lastLogoff:DESC', label: 'Most recently online' },
+  { value: 'inventoryValue:DESC', label: 'Most expensive inventory' },
+  { value: 'oldestBadge:ASC', label: 'Oldest last badge' },
+  { value: 'veteranMix:DESC', label: 'Veteran mix (value × badge age)' },
 ];
 
 export default function ProfilesPage() {
@@ -49,6 +53,7 @@ export default function ProfilesPage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-7xl mx-auto">
       <ProfileFetchForm />
+      <BulkFetchBar />
 
       <div className="flex flex-col md:flex-row gap-3 items-stretch">
         <div className="flex-1 min-w-0">

@@ -17,6 +17,7 @@ const get = async (url, params = {}, opts = {}) => {
       headers,
       strategy,
       timeout: opts.timeout,
+      noRetry: opts.noRetry,
     });
   return strategy === 'suborbit' ? limiter.inventory(run) : limiter.steam(run);
 };

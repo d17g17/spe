@@ -6,7 +6,14 @@ export const cs2Key = (id) => ['cs2', id];
 export const useCS2Inventory = (steamId) =>
   useQuery({
     queryKey: cs2Key(steamId),
-    queryFn: () => api.cs2.get(steamId),
+    queryFn: async () => {
+      try {
+        return await api.cs2.get(steamId);
+      } catch (err) {
+        if (err?.response?.status === 404) return null;
+        throw err;
+      }
+    },
     enabled: Boolean(steamId),
     retry: 0,
   });

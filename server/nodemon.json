@@ -1,0 +1,14 @@
+{
+  "watch": ["server.js", "src/"],
+  "ext": "js,json",
+  "ignore": [
+    "database/**",
+    "node_modules/**",
+    "logs/**",
+    "**/*.db",
+    "**/*.sqlite",
+    "**/proxy-state.json",
+    "**/*.log"
+  ],
+  "delay": 500
+}

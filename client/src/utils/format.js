@@ -33,3 +33,18 @@ export const personaLabel = (s) => PERSONA[Number(s) || 0] || 'Offline';
 
 const VIS = { 1: 'Private', 2: 'Friends Only', 3: 'Public' };
 export const visibilityLabel = (s) => VIS[Number(s)] || 'Unknown';
+
+export const formatDate = (date) => {
+  if (!date) return '—';
+  const d = new Date(date);
+  if (!Number.isFinite(d.getTime())) return '—';
+  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+};
+
+export const countryFlag = (code) => {
+  if (!code || typeof code !== 'string' || code.length !== 2) return '';
+  const cc = code.toUpperCase();
+  if (!/^[A-Z]{2}$/.test(cc)) return '';
+  const base = 0x1f1e6;
+  return String.fromCodePoint(base + cc.charCodeAt(0) - 65, base + cc.charCodeAt(1) - 65);
+};

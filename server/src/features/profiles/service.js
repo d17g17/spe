@@ -2,6 +2,7 @@
 
 const repo = require('./repo');
 const steamApi = require('../../steam/api');
+const community = require('../../steam/community');
 const transform = require('../../steam/transform');
 const { parseSteamInput } = require('../../utils/steamId');
 const config = require('../../config');
@@ -22,11 +23,13 @@ const resolveIdentifier = async (raw) => {
 };
 
 const fetchFullFromSteam = async (steamId) => {
-  const [summary, bans, recent, badges] = await Promise.all([
+  const [summary, bans, recent, badges, badgesPage, friends] = await Promise.all([
     steamApi.getPlayerSummary(steamId).catch(() => null),
     steamApi.getPlayerBans([steamId]).then((b) => b[0] || null).catch(() => null),
     steamApi.getRecentlyPlayed(steamId).catch(() => []),
     steamApi.getBadges(steamId).catch(() => null),
+    community.fetchBadgesPage(steamId).catch(() => null),
+    steamApi.getFriendList(steamId).catch(() => null),
   ]);
 
   if (!summary) return null;
@@ -34,11 +37,15 @@ const fetchFullFromSteam = async (steamId) => {
   const shape = transform.summaryToDbShape(summary);
   const banShape = transform.bansToDbShape(bans);
   const badgeShape = transform.badgesToShape(badges);
+  const scraped = (badgesPage && badgesPage.status === 'ok') ? badgesPage.badges : null;
+  const friendsField = Array.isArray(friends) ? { friendsCount: friends.length } : {};
   return {
     ...shape,
     ...banShape,
+    ...friendsField,
     playtime2Weeks: transform.recentToPlaytime2Weeks(recent),
     lastBadgeDate: badgeShape.lastBadgeDate,
+    badges: scraped,
   };
 };
 

@@ -17,9 +17,13 @@ module.exports = (sequelize, DataTypes) => {
     {
       profileId: { type: DataTypes.STRING(17), allowNull: false, primaryKey: true, field: 'profile_id' },
       totalValueUsd: { type: DataTypes.DECIMAL(12, 2), field: 'total_value_usd' },
+      totalValueWithStickersUsd: { type: DataTypes.DECIMAL(12, 2), allowNull: true, field: 'total_value_with_stickers_usd' },
       tradableItemsCount: { type: DataTypes.INTEGER, defaultValue: 0, field: 'tradable_items_count' },
       totalItemsCount: { type: DataTypes.INTEGER, defaultValue: 0, field: 'total_items_count' },
       top5TradableItems: { type: DataTypes.JSON, field: 'top_5_tradable_items' },
+      items: { type: DataTypes.JSON, allowNull: true },
+      medals: { type: DataTypes.JSON, allowNull: true },
+      notableItems: { type: DataTypes.JSON, allowNull: true, field: 'notable_items' },
       status: {
         type: DataTypes.ENUM('checked', 'private', 'empty', 'error', 'skipped'),
         allowNull: false,

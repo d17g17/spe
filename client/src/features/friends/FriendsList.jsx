@@ -5,6 +5,9 @@ import ProfileCard from '../profiles/ProfileCard.jsx';
 import SearchBar from '../profiles/SearchBar.jsx';
 import FriendStatistics from './FriendStatistics.jsx';
 import { useNotifications } from '../../state/NotificationContext.jsx';
+import {
+  useBulkInventoryStatus, useStartBulkInventory, useBulkInventorySocket,
+} from '../cs2/useBulkInventory.js';
 
 const SORTS = [
   { value: 'friendSince:DESC', label: 'Friends since (newest)' },
@@ -49,9 +52,25 @@ export default function FriendsList({ steamId, fetchStatus }) {
     ? Math.round((fetchStatus.processed / fetchStatus.total) * 100)
     : null;
 
+  const bulkStatus = useBulkInventoryStatus(steamId);
+  const startBulk = useStartBulkInventory();
+  useBulkInventorySocket(steamId);
+  const bulk = bulkStatus.data || {};
+  const bulkInProgress = bulk.status === 'starting' || bulk.status === 'in_progress';
+  const bulkPct = bulkInProgress && bulk.toFetch
+    ? Math.round((bulk.processed / bulk.toFetch) * 100)
+    : null;
+
   const onFetch = () => {
     fetchMut.mutate(steamId, {
       onSuccess: () => success('Friend fetch started'),
+      onError: (e) => error(e?.response?.data?.error || e.message),
+    });
+  };
+
+  const onBulk = (force = false) => {
+    startBulk.mutate({ ownerId: steamId, force }, {
+      onSuccess: () => success(force ? 'Bulk inventory refresh started' : 'Bulk inventory fetch started'),
       onError: (e) => error(e?.response?.data?.error || e.message),
     });
   };
@@ -60,14 +79,52 @@ export default function FriendsList({ steamId, fetchStatus }) {
     <div className="space-y-3">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h2 className="text-lg font-semibold">Friends ({total})</h2>
-        <button onClick={onFetch} disabled={inProgress || fetchMut.isPending} className="btn-secondary text-sm">
-          {inProgress ? `Fetching… ${progressPct != null ? `${progressPct}%` : ''}` : 'Fetch friends'}
-        </button>
+        <div className="flex gap-2 flex-wrap">
+          <button onClick={onFetch} disabled={inProgress || fetchMut.isPending} className="btn-secondary text-sm">
+            {inProgress ? `Fetching friends… ${progressPct != null ? `${progressPct}%` : ''}` : 'Fetch friends'}
+          </button>
+          <button
+            onClick={() => onBulk(false)}
+            disabled={bulkInProgress || startBulk.isPending || friends.length === 0}
+            className="btn-primary text-sm"
+            title="Fetch CS2 inventory + prices for every friend (skips recent)"
+          >
+            {bulkInProgress
+              ? `Inventories… ${bulkPct != null ? `${bulkPct}%` : ''} (${bulk.processed || 0}/${bulk.toFetch || 0})`
+              : 'Fetch friend inventories'}
+          </button>
+          {!bulkInProgress && (
+            <button
+              onClick={() => onBulk(true)}
+              disabled={startBulk.isPending || friends.length === 0}
+              className="btn-ghost text-sm"
+              title="Force refresh, ignore 24h cache"
+            >
+              Force refresh
+            </button>
+          )}
+        </div>
       </div>
 
       {inProgress && fetchStatus.total > 0 && (
         <div className="h-1 bg-gray-800 rounded overflow-hidden">
           <div className="h-full bg-sky-500 transition-all" style={{ width: `${progressPct || 0}%` }} />
+        </div>
+      )}
+
+      {bulkInProgress && (
+        <div className="card text-xs text-gray-300 space-y-2">
+          <div className="flex flex-wrap gap-x-4 gap-y-1">
+            <span>Processed: <span className="text-gray-100">{bulk.processed || 0}/{bulk.toFetch || 0}</span></span>
+            <span>Checked: <span className="text-emerald-300">{bulk.checked || 0}</span></span>
+            <span>Private: <span className="text-amber-300">{bulk.private || 0}</span></span>
+            <span>Empty: <span className="text-gray-400">{bulk.empty || 0}</span></span>
+            <span>Errors: <span className="text-red-300">{bulk.errors || 0}</span></span>
+            <span>Skipped (cached): <span className="text-gray-400">{bulk.skipped || 0}</span></span>
+          </div>
+          <div className="h-1 bg-gray-800 rounded overflow-hidden">
+            <div className="h-full bg-emerald-500 transition-all" style={{ width: `${bulkPct || 0}%` }} />
+          </div>
         </div>
       )}
 

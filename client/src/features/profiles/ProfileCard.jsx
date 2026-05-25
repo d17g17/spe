@@ -1,9 +1,11 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { formatRelative, personaLabel } from '../../utils/format.js';
-import { useDeleteProfile } from './useProfiles.js';
+import { formatRelative, formatMoney, formatDate, countryFlag } from '../../utils/format.js';
+import { useDeleteProfile, useFetchProfile } from './useProfiles.js';
+import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import InventoryBadge from '../cs2/InventoryBadge.jsx';
+import BadgesRow from '../cs2/BadgesRow.jsx';
 import { useState } from 'react';
 import ConfirmationDialog from '../../components/ConfirmationDialog.jsx';
 
@@ -19,10 +21,30 @@ const PERSONA_COLORS = {
 
 export default function ProfileCard({ profile, compact = false }) {
   const { mutate: deleteOne } = useDeleteProfile();
+  const fetchProfile = useFetchProfile();
+  const fetchCs2 = useFetchCS2();
   const { success, error } = useNotifications();
   const [confirm, setConfirm] = useState(false);
   const ps = profile.personaState ?? 0;
   const dot = PERSONA_COLORS[ps] || PERSONA_COLORS[0];
+  const cash = profile.cs2Inventory?.totalValueUsd;
+  const cashWithStickers = profile.cs2Inventory?.totalValueWithStickersUsd;
+  const showCashSticker = cashWithStickers != null && Number(cashWithStickers) > Number(cash || 0);
+  const isPublic = profile.communityVisibilityState === 3;
+  const medals = Array.isArray(profile.cs2Inventory?.medals) ? profile.cs2Inventory.medals : [];
+  const refreshing = fetchProfile.isPending || fetchCs2.isPending;
+
+  const onRefresh = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    fetchProfile.mutate({ id: profile.steamId, force: true }, {
+      onSuccess: () => success(`${profile.name || profile.steamId} refreshed`),
+      onError: (err) => error(err?.response?.data?.error || err.message),
+    });
+    fetchCs2.mutate(profile.steamId, {
+      onError: (err) => error(err?.response?.data?.error || err.message),
+    });
+  };
 
   return (
     <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className="card hover:border-gray-700 transition-colors">
@@ -37,29 +59,71 @@ export default function ProfileCard({ profile, compact = false }) {
           <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-900 ${dot}`} />
         </Link>
         <div className="flex-1 min-w-0">
-          <Link to={`/profile/${profile.steamId}`} className="font-medium text-gray-100 truncate block hover:text-sky-300">
-            {profile.name || profile.steamId}
+          <Link to={`/profile/${profile.steamId}`} className="font-medium text-gray-100 truncate hover:text-sky-300 flex items-center gap-1.5">
+            {profile.country && (
+              <span title={profile.country} className="text-base leading-none">{countryFlag(profile.country)}</span>
+            )}
+            <span className="truncate">{profile.name || profile.steamId}</span>
           </Link>
           <div className="text-xs text-gray-500 truncate">{profile.steamId}</div>
           {!compact && (
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-400">
-              <span>{personaLabel(ps)}</span>
-              {profile.country && <span>• {profile.country}</span>}
-              <span>• {profile.friendsCount ?? 0} friends</span>
-              <span>• {formatRelative(profile.updatedAt)}</span>
+            <>
+              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
+                <span className="relative pt-2 inline-block">
+                  <span className="text-gray-500">Cash:</span>{' '}
+                  <span className="text-emerald-300">{cash != null ? formatMoney(cash) : '—'}</span>
+                  {showCashSticker && (
+                    <span
+                      className="absolute -top-0.5 right-0 text-[9px] text-sky-400 leading-none"
+                      title={`With sticker prices: ${formatMoney(cashWithStickers)}`}
+                    >
+                      {formatMoney(cashWithStickers)}
+                    </span>
+                  )}
+                </span>
+                <span><span className="text-gray-500">Friends:</span> {profile.friendsCount ?? 0}</span>
+                <span className="col-span-2 flex items-center gap-2 flex-wrap">
+                  <span>
+                    <span className="text-gray-500">Last badge:</span> {formatDate(profile.lastBadgeDate)}
+                  </span>
+                  {medals.length > 0 && <BadgesRow badges={medals} max={3} inline />}
+                </span>
+                <span><span className="text-gray-500">Updated:</span> {formatRelative(profile.updatedAt)}</span>
+              </div>
+            </>
+          )}
+          {compact && (
+            <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-gray-400">
+              <span><span className="text-gray-500">Badge:</span> {formatDate(profile.lastBadgeDate)}</span>
+              {medals.length > 0 && <BadgesRow badges={medals} max={3} inline />}
             </div>
           )}
           <div className="mt-2 flex flex-wrap items-center gap-1">
-            {profile.vacBanned && <span className="badge bg-red-700/40 text-red-200">VAC</span>}
+            <span className={`badge ${isPublic ? 'bg-emerald-700/30 text-emerald-200' : 'bg-gray-700/40 text-gray-300'}`}>
+              {isPublic ? 'Public' : 'Private'}
+            </span>
+            <span className={`badge ${profile.vacBanned ? 'bg-red-700/40 text-red-200' : 'bg-gray-700/30 text-gray-400'}`}>
+              {profile.vacBanned ? 'VAC' : 'No VAC'}
+            </span>
             {profile.gameBanned && <span className="badge bg-red-700/40 text-red-200">Game ban</span>}
             {profile.tradeBanned && <span className="badge bg-amber-700/40 text-amber-200">Trade ban</span>}
             {profile.hasCyrillic && <span className="badge bg-sky-700/40 text-sky-200">Cyrillic</span>}
             <InventoryBadge inventory={profile.cs2Inventory} />
           </div>
         </div>
-        {!compact && (
-          <button onClick={() => setConfirm(true)} title="Delete" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
-        )}
+        <div className="flex flex-col items-center gap-1 shrink-0">
+          <button
+            onClick={onRefresh}
+            disabled={refreshing}
+            title="Refresh profile + inventory"
+            className="text-gray-500 hover:text-sky-300 text-sm disabled:opacity-50"
+          >
+            {refreshing ? '…' : '↻'}
+          </button>
+          {!compact && (
+            <button onClick={() => setConfirm(true)} title="Delete" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
+          )}
+        </div>
       </div>
       {confirm && (
         <ConfirmationDialog

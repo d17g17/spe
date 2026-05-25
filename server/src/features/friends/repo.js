@@ -40,6 +40,18 @@ const replaceFriendships = async (steamId, friendships) => {
   });
 };
 
+const bulkInsertPlaceholders = async (steamIds) => {
+  if (!Array.isArray(steamIds) || steamIds.length === 0) return;
+  const rows = steamIds.map((id) => ({
+    steamId: id,
+    hasCyrillic: false,
+    vacBanned: false,
+    gameBanned: false,
+    tradeBanned: false,
+  }));
+  await models.Profile.bulkCreate(rows, { ignoreDuplicates: true });
+};
+
 const bulkUpsertProfiles = async (profileShapes) => {
   if (!Array.isArray(profileShapes) || profileShapes.length === 0) return;
   await models.Profile.bulkCreate(profileShapes, {
@@ -50,6 +62,10 @@ const bulkUpsertProfiles = async (profileShapes) => {
       'tradeBanned', 'updatedAt',
     ],
   });
+};
+
+const setFriendsCount = async (steamId, count) => {
+  await models.Profile.update({ friendsCount: count }, { where: { steamId } });
 };
 
 const existingProfileIds = async (steamIds) => {
@@ -66,6 +82,8 @@ module.exports = {
   listFriends,
   countFriends,
   replaceFriendships,
+  bulkInsertPlaceholders,
   bulkUpsertProfiles,
   existingProfileIds,
+  setFriendsCount,
 };

@@ -1,6 +1,8 @@
 'use strict';
 
 const service = require('./service');
+const bulk = require('./bulkPipeline');
+const backfill = require('./backfill');
 const socketBus = require('../../socket');
 
 const get = async (req, res, next) => {
@@ -23,4 +25,27 @@ const stats = async (_req, res, next) => {
   try { res.json(await service.stats()); } catch (err) { next(err); }
 };
 
-module.exports = { get, fetch, stats };
+const bulkStart = async (req, res, next) => {
+  try {
+    const force = req.query?.force === 'true' || req.body?.force === true;
+    const state = await bulk.start(req.params.id, { force });
+    res.json(state);
+  } catch (err) { next(err); }
+};
+
+const bulkStatus = async (req, res, next) => {
+  try { res.json(bulk.getStatus(req.params.id)); } catch (err) { next(err); }
+};
+
+const bulkActive = async (_req, res, next) => {
+  try { res.json(bulk.listActive()); } catch (err) { next(err); }
+};
+
+const backfillMedals = async (_req, res, next) => {
+  try {
+    const result = await backfill.backfillMedalsFromItems();
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+module.exports = { get, fetch, stats, bulkStart, bulkStatus, bulkActive, backfillMedals };

@@ -9,6 +9,7 @@ import { useNotifications } from '../../state/NotificationContext.jsx';
 import { useSettings } from '../../state/SettingsContext.jsx';
 import ConfirmationDialog from '../../components/ConfirmationDialog.jsx';
 import { useFetchFriends } from '../friends/useFetchFriends.js';
+import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 
 export default function ProfilePage() {
   const { steamId } = useParams();
@@ -19,6 +20,7 @@ export default function ProfilePage() {
 
   const profileQuery = useProfile(steamId);
   const fetchMut = useFetchProfile();
+  const fetchCs2Mut = useFetchCS2();
   const deleteMut = useDeleteProfile();
   const fetchFriendsMut = useFetchFriends();
   const socketStatus = useProfileSocket(steamId);
@@ -38,9 +40,9 @@ export default function ProfilePage() {
   }, [settings.autoFetchFriends, profileQuery.data?.steamId]);
 
   const profile = profileQuery.data;
-  const refreshing = fetchMut.isPending;
+  const refreshing = fetchMut.isPending || fetchCs2Mut.isPending;
 
-  if (profileQuery.isLoading || fetchMut.isPending) {
+  if (profileQuery.isLoading && !profile) {
     return <div className="text-gray-500 text-sm py-12 text-center">Loading profile…</div>;
   }
 
@@ -55,6 +57,9 @@ export default function ProfilePage() {
   const onRefresh = () => {
     fetchMut.mutate({ id: steamId, force: true }, {
       onSuccess: () => success('Profile refreshed'),
+      onError: (e) => error(e?.response?.data?.error || e.message),
+    });
+    fetchCs2Mut.mutate(steamId, {
       onError: (e) => error(e?.response?.data?.error || e.message),
     });
   };

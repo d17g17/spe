@@ -13,22 +13,27 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 const isRetryableStatus = (s) => s === 429 || (s >= 500 && s < 600);
 
-const isWebApi = (url) =>
-  /^https?:\/\/(api\.steampowered\.com|steamcommunity\.com\/market\/)/i.test(url);
+const isWebApi = (url) => /^https?:\/\/api\.steampowered\.com/i.test(url);
 
-const isInventory = (url) =>
-  /steamcommunity\.com\/inventory\//i.test(url);
+const isInventory = (url) => /steamcommunity\.com\/inventory\//i.test(url);
+
+const isMarket = (url) => /steamcommunity\.com\/market\//i.test(url);
 
 const pickStrategy = (url, override) => {
+  const wantSuborbit = override === 'suborbit' || (!override && (isInventory(url) || isMarket(url)));
+  if (wantSuborbit) return suborbit.enabled ? 'suborbit' : 'webshare';
   if (override) return override;
-  if (isInventory(url)) return 'suborbit';
   if (isWebApi(url)) return 'webshare';
   return 'webshare';
 };
 
+const requestDirect = (opts) =>
+  axios({ ...opts, timeout: opts.timeout || DEFAULT_TIMEOUT, proxy: false });
+
 const requestViaWebshare = async (opts) => {
+  if (!webshare.isGloballyEnabled()) return requestDirect(opts);
   const proxy = webshare.pick();
-  if (!proxy) return axios({ ...opts, timeout: opts.timeout || DEFAULT_TIMEOUT });
+  if (!proxy) return requestDirect(opts);
   try {
     return await axios({
       ...opts,
@@ -38,7 +43,9 @@ const requestViaWebshare = async (opts) => {
       proxy: false,
     });
   } catch (err) {
-    if (err.response?.status === 429) webshare.markRateLimited(proxy.id);
+    const s = err.response?.status;
+    if (s === 429) webshare.markRateLimited(proxy.id);
+    else if (s === 402 || s === 407 || s === 502 || s === 503) webshare.markDead(proxy.id);
     else if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.code === 'ECONNRESET') {
       webshare.markDead(proxy.id);
     }
@@ -47,6 +54,7 @@ const requestViaWebshare = async (opts) => {
 };
 
 const requestViaSuborbit = async (opts) => {
+  if (!webshare.isGloballyEnabled()) return requestDirect(opts);
   if (!suborbit.enabled) {
     throw new Error('Suborbit proxy not configured (SUBORBIT_* env vars missing)');
   }
@@ -59,26 +67,40 @@ const requestViaSuborbit = async (opts) => {
   });
 };
 
+const annotate = (err, strategy) => {
+  const status = err.response?.status;
+  if (status === 402) {
+    err.proxyError = true;
+    err.userMessage = 'Proxy provider rejected the request (402 - bandwidth/subscription cap). Top up Webshare or check the proxy file.';
+  } else if (status === 407) {
+    err.proxyError = true;
+    err.userMessage = 'Proxy auth failed (407). Verify proxy credentials.';
+  } else if (strategy === 'suborbit' && (status === 401 || status === 403)) {
+    err.proxyError = true;
+    err.userMessage = 'Suborbit proxy auth failed. Check SUBORBIT_* env vars.';
+  }
+  return err;
+};
+
 const request = async (opts) => {
   const strategy = pickStrategy(opts.url, opts.strategy);
+  const maxAttempts = opts.noRetry ? 1 : MAX_RETRIES;
   let lastErr;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
       const res = strategy === 'suborbit'
         ? await requestViaSuborbit(opts)
         : await requestViaWebshare(opts);
       return res;
     } catch (err) {
-      lastErr = err;
+      lastErr = annotate(err, strategy);
       const status = err.response?.status;
-      if (status === 401 || status === 403 || status === 404) throw err;
-      if (attempt === MAX_RETRIES - 1) break;
-      if (status && !isRetryableStatus(status)) {
-        if (status === 400 || status === 422) throw err;
-      }
+      if (status === 401 || status === 403 || status === 404) throw lastErr;
+      if (attempt === maxAttempts - 1) break;
+      if (status === 400 || status === 422) throw lastErr;
       const retryAfter = Number(err.response?.headers?.['retry-after']);
       const delay = Number.isFinite(retryAfter) ? retryAfter * 1000 : BASE_BACKOFF_MS * Math.pow(2, attempt);
-      logger.debug(`proxy retry ${attempt + 1}/${MAX_RETRIES} via ${strategy}: ${err.message} (sleep ${delay}ms)`);
+      logger.debug(`proxy retry ${attempt + 1}/${maxAttempts} via ${strategy}: ${err.message} (sleep ${delay}ms)`);
       await sleep(delay);
     }
   }

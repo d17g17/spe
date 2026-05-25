@@ -57,10 +57,22 @@ try {
 try {
   app.use('/api/prices', require('./src/features/prices/routes'));
 } catch (_) { /* not yet implemented */ }
+try {
+  app.use('/api/proxies', require('./src/features/proxies/routes'));
+} catch (_) { /* not yet implemented */ }
 
 app.use((err, _req, res, _next) => {
-  logger.error(`unhandled error: ${err.message}`, { stack: err.stack });
   if (res.headersSent) return;
+  if (err.proxyError) {
+    logger.warn(`proxy error: ${err.userMessage}`);
+    return res.status(502).json({ error: err.userMessage, kind: 'proxy' });
+  }
+  const upstreamStatus = err.response?.status;
+  if (upstreamStatus) {
+    logger.warn(`upstream ${upstreamStatus}: ${err.message}`);
+    return res.status(502).json({ error: `Upstream Steam request failed (${upstreamStatus})`, kind: 'upstream' });
+  }
+  logger.error(`unhandled error: ${err.message}`, { stack: err.stack });
   res.status(err.status || 500).json({ error: err.message || 'Internal Server Error' });
 });
 

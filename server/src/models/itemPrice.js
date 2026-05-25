@@ -14,6 +14,7 @@ module.exports = (sequelize, DataTypes) => {
       lastUpdated: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW, field: 'last_updated' },
       isCase: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false, field: 'is_case' },
       fetchCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 1, field: 'fetch_count' },
+      volume: { type: DataTypes.INTEGER, allowNull: true, defaultValue: 0 },
     },
     {
       sequelize,

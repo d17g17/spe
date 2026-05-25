@@ -6,6 +6,7 @@ const { sequelize, models } = require('../../db');
 const SORTABLE = new Set([
   'updatedAt', 'createdAt', 'name', 'friendsCount', 'playtime2Weeks',
   'lastLogoff', 'lastBadgeDate', 'country', 'personaState',
+  'inventoryValue', 'oldestBadge', 'veteranMix',
 ]);
 
 const findById = (steamId) => models.Profile.findByPk(steamId);
@@ -39,6 +40,31 @@ const buildWhere = (filters = {}, search = '') => {
   return where;
 };
 
+const buildOrder = (sortBy, sortDir) => {
+  const key = SORTABLE.has(sortBy) ? sortBy : 'updatedAt';
+  const dir = String(sortDir).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
+
+  if (key === 'inventoryValue') {
+    return [
+      [sequelize.literal('COALESCE(`cs2Inventory`.`total_value_usd`, 0)'), dir],
+    ];
+  }
+  if (key === 'oldestBadge') {
+    return [
+      [sequelize.literal('CASE WHEN `Profile`.`lastBadgeDate` IS NULL THEN 1 ELSE 0 END'), 'ASC'],
+      ['lastBadgeDate', 'ASC'],
+    ];
+  }
+  if (key === 'veteranMix') {
+    return [
+      [sequelize.literal(
+        "(COALESCE(`cs2Inventory`.`total_value_usd`, 0) * COALESCE(julianday('now') - julianday(`Profile`.`lastBadgeDate`), 0))"
+      ), 'DESC'],
+    ];
+  }
+  return [[key, dir]];
+};
+
 const list = async ({
   sortBy = 'updatedAt',
   sortDir = 'DESC',
@@ -47,16 +73,15 @@ const list = async ({
   filters = {},
   search = '',
 } = {}) => {
-  const column = SORTABLE.has(sortBy) ? sortBy : 'updatedAt';
-  const dir = String(sortDir).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
   const where = buildWhere(filters, search);
 
   const { rows, count } = await models.Profile.findAndCountAll({
     where,
     include: [{ model: models.CS2Inventory, as: 'cs2Inventory', required: false }],
-    order: [[column, dir]],
+    order: buildOrder(sortBy, sortDir),
     limit: Math.max(1, Math.min(Number(limit) || 60, 300)),
     offset: Math.max(0, Number(offset) || 0),
+    subQuery: false,
   });
 
   return { rows: rows.map((r) => r.toJSON()), total: count };

@@ -63,9 +63,10 @@ const run = async (steamId) => {
   setStatus(steamId, { status: 'in_progress', total: friendIds.length, processed: 0, errors: 0 });
   emit(steamId, 'progress', getStatus(steamId));
 
-  await repo.replaceFriendships(steamId, friendShapes);
+  await repo.setFriendsCount(steamId, friendIds.length);
 
   if (friendIds.length === 0) {
+    await repo.replaceFriendships(steamId, []);
     const done = setStatus(steamId, { status: 'complete', processed: 0, total: 0 });
     emit(steamId, 'complete', done);
     schedulePrune(steamId);
@@ -73,12 +74,16 @@ const run = async (steamId) => {
   }
 
   const existing = await repo.existingProfileIds(friendIds);
-  const newIds = friendIds.filter((id) => !existing.has(id));
-  const idsToHydrate = newIds.length > 0 ? newIds : friendIds;
+  const missing = friendIds.filter((id) => !existing.has(id));
+  if (missing.length > 0) {
+    await repo.bulkInsertPlaceholders(missing);
+  }
+
+  await repo.replaceFriendships(steamId, friendShapes);
 
   let processed = 0;
   let errors = 0;
-  const batches = chunk(idsToHydrate, config.friendBatchSize);
+  const batches = chunk(friendIds, config.friendBatchSize);
 
   for (const batch of batches) {
     try {

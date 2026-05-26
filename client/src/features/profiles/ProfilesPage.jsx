@@ -7,6 +7,7 @@ import Pagination from './Pagination.jsx';
 import ProfileCard from './ProfileCard.jsx';
 import BulkFetchBar from './BulkFetchBar.jsx';
 import { useProfilesList } from './useProfiles.js';
+import usePersistedState from '../../utils/usePersistedState.js';
 
 const PAGE_SIZE = 60;
 
@@ -22,8 +23,8 @@ export default function ProfilesPage() {
   const [search, setSearch] = useState('');
   const [debounced, setDebounced] = useState('');
   const [page, setPage] = useState(0);
-  const [sort, setSort] = useState('smart:DESC');
-  const [filters, setFilters] = useState({});
+  const [sort, setSort] = usePersistedState('profiles.sort', 'smart:DESC');
+  const [filters, setFilters] = usePersistedState('profiles.filters', {});
 
   useEffect(() => {
     const t = setTimeout(() => setDebounced(search), 300);

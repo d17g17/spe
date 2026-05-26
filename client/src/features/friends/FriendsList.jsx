@@ -10,19 +10,39 @@ import {
   useBulkInventoryStatus, useStartBulkInventory, useBulkInventorySocket,
 } from '../cs2/useBulkInventory.js';
 import { speedPercent } from '../../utils/concurrency.js';
+import usePersistedState from '../../utils/usePersistedState.js';
 
 const SORTS = [
-  { value: 'friendSince:DESC', label: 'Friends since (newest)' },
-  { value: 'friendSince:ASC', label: 'Friends since (oldest)' },
+  { value: 'smart:DESC', label: 'Smart (value × badge age)' },
+  { value: 'inventoryValue:DESC', label: 'Most expensive inventory' },
+  { value: 'oldestBadge:ASC', label: 'Oldest last badge' },
   { value: 'name:ASC', label: 'Name (A→Z)' },
-  { value: 'friendsCount:DESC', label: 'Most friends' },
 ];
+const SORT_VALUES = new Set(SORTS.map((s) => s.value));
+
+const sortKey = (f, key) => {
+  if (key === 'name') return (f.name || '').toLowerCase();
+  if (key === 'inventoryValue') return Number(f.cs2Inventory?.totalValueUsd ?? 0);
+  if (key === 'oldestBadge') {
+    return f.lastBadgeDate ? new Date(f.lastBadgeDate).getTime() : Number.POSITIVE_INFINITY;
+  }
+  if (key === 'smart') {
+    const val = Number(f.cs2Inventory?.totalValueUsd ?? 0);
+    const badge = f.lastBadgeDate ? new Date(f.lastBadgeDate).getTime() : 0;
+    const days = badge ? (Date.now() - badge) / 86_400_000 : 0;
+    return val * days;
+  }
+  return 0;
+};
 
 export default function FriendsList({ steamId, fetchStatus }) {
   const [search, setSearch] = useState('');
-  const [sort, setSort] = useState('friendSince:DESC');
-  const [bulkConcurrency, setBulkConcurrency] = useState(4);
-  const [bulkAdaptive, setBulkAdaptive] = useState(false);
+  const [sort, setSortRaw] = usePersistedState('friends.sort', 'smart:DESC');
+  // Guard against stale persisted values from older versions of the sort list.
+  const setSort = setSortRaw;
+  const activeSort = SORT_VALUES.has(sort) ? sort : 'smart:DESC';
+  const [bulkConcurrency, setBulkConcurrency] = usePersistedState('bulk.friends.concurrency', 4);
+  const [bulkAdaptive, setBulkAdaptive] = usePersistedState('bulk.friends.adaptive', false);
   const friendsQuery = useFriends(steamId, { limit: 1000 });
   const fetchMut = useFetchFriends();
   const { success, error } = useNotifications();
@@ -39,16 +59,16 @@ export default function FriendsList({ steamId, fetchStatus }) {
           (f.steamId || '').includes(term) ||
           (f.realName || '').toLowerCase().includes(term)
         );
-    const [k, dir] = sort.split(':');
+    const [k, dir] = activeSort.split(':');
     const sign = dir === 'ASC' ? 1 : -1;
     out.sort((a, b) => {
-      const av = a[k] ?? (k === 'name' ? '' : 0);
-      const bv = b[k] ?? (k === 'name' ? '' : 0);
+      const av = sortKey(a, k);
+      const bv = sortKey(b, k);
       if (typeof av === 'string') return sign * av.localeCompare(bv);
-      return sign * ((new Date(av).getTime() || av) - (new Date(bv).getTime() || bv));
+      return sign * (av - bv);
     });
     return out;
-  }, [friends, search, sort]);
+  }, [friends, search, activeSort]);
 
   const status = fetchStatus?.status || 'idle';
   const inProgress = status === 'starting' || status === 'in_progress';
@@ -187,7 +207,7 @@ export default function FriendsList({ steamId, fetchStatus }) {
 
       <div className="flex gap-2">
         <SearchBar value={search} onChange={setSearch} placeholder="Search friends…" />
-        <select value={sort} onChange={(e) => setSort(e.target.value)} className="input md:w-64">
+        <select value={activeSort} onChange={(e) => setSort(e.target.value)} className="input md:w-64">
           {SORTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
       </div>

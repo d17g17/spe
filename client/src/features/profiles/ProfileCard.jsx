@@ -11,6 +11,7 @@ import BadgesRow from '../cs2/BadgesRow.jsx';
 import { LevelBadge, YearsBadge } from './SteamBadges.jsx';
 import { useState } from 'react';
 import ConfirmationDialog from '../../components/ConfirmationDialog.jsx';
+import useLocation from '../../utils/useLocation.js';
 
 const PERSONA_COLORS = {
   0: 'bg-gray-700',
@@ -29,6 +30,8 @@ const gcUrl = (profile) => {
   return `https://gcsteamcommunity.com/profiles/${profile.steamId}`;
 };
 
+const steamUrl = (profile) => profile?.profileUrl || `https://steamcommunity.com/profiles/${profile.steamId}`;
+
 export default function ProfileCard({ profile, compact = false }) {
   const { mutate: deleteOne } = useDeleteProfile();
   const fetchProfile = useFetchProfile();
@@ -40,6 +43,8 @@ export default function ProfileCard({ profile, compact = false }) {
   const isPublic = profile.communityVisibilityState === 3;
   const medals = Array.isArray(profile.cs2Inventory?.medals) ? profile.cs2Inventory.medals : [];
   const refreshing = fetchProfile.isPending || fetchCs2.isPending;
+  const loc = useLocation(profile);
+  const cityLabel = loc?.city || loc?.state || null;
 
   const onRefresh = (e) => {
     e.preventDefault();
@@ -72,15 +77,24 @@ export default function ProfileCard({ profile, compact = false }) {
             {profile.steamLevel != null && <LevelBadge level={profile.steamLevel} />}
             {profile.timeCreated && <YearsBadge timeCreated={profile.timeCreated} />}
           </Link>
-          <div className="text-xs truncate">
-            {profile.realName && (
-              <>
+          {(profile.realName || cityLabel) && (
+            <div className="text-xs truncate">
+              {profile.realName && (
                 <span className="text-gray-400" title={profile.realName}>{profile.realName}</span>
+              )}
+              {profile.realName && cityLabel && (
                 <span className="text-gray-600 mx-1.5">·</span>
-              </>
-            )}
-            <span className="text-gray-500">{profile.steamId}</span>
-          </div>
+              )}
+              {cityLabel && (
+                <span
+                  className="text-gray-400"
+                  title={[loc?.city, loc?.state, loc?.country].filter(Boolean).join(', ')}
+                >
+                  {cityLabel}
+                </span>
+              )}
+            </div>
+          )}
           {!compact && (
             <>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
@@ -124,6 +138,16 @@ export default function ProfileCard({ profile, compact = false }) {
           >
             {refreshing ? '…' : '↻'}
           </button>
+          <a
+            href={steamUrl(profile)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="Open on Steam"
+            className="text-[10px] font-bold text-sky-400 hover:text-sky-300 leading-none"
+          >
+            ST
+          </a>
           <a
             href={gcUrl(profile)}
             target="_blank"

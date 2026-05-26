@@ -5,6 +5,7 @@ import {
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import BulkResultDialog from '../../components/BulkResultDialog.jsx';
 import { speedPercent } from '../../utils/concurrency.js';
+import usePersistedState from '../../utils/usePersistedState.js';
 
 export default function BulkFetchBar({ sortBy, sortDir, filters, search } = {}) {
   const status = useBulkFetchAllStatus();
@@ -12,10 +13,10 @@ export default function BulkFetchBar({ sortBy, sortDir, filters, search } = {}) 
   const cancelMut = useCancelBulkFetchAll();
   const { info, error } = useNotifications();
   const [open, setOpen] = useState(false);
-  const [concurrency, setConcurrency] = useState(4);
-  const [adaptive, setAdaptive] = useState(false);
-  const [includeCs2, setIncludeCs2] = useState(true);
-  const [force, setForce] = useState(false);
+  const [concurrency, setConcurrency] = usePersistedState('bulk.all.concurrency', 4);
+  const [adaptive, setAdaptive] = usePersistedState('bulk.all.adaptive', false);
+  const [includeCs2, setIncludeCs2] = usePersistedState('bulk.all.includeCs2', true);
+  const [force, setForce] = usePersistedState('bulk.all.force', false);
   const [report, setReport] = useState(null);
   const prevStatus = useRef(status?.status);
 

@@ -87,8 +87,12 @@ const list = async ({
   return { rows: rows.map((r) => r.toJSON()), total: count };
 };
 
-const listIds = async ({ sortBy, sortDir, filters = {}, search = '' } = {}) => {
+const listIds = async ({ sortBy, sortDir, filters = {}, search = '', steamIds } = {}) => {
   const where = buildWhere(filters, search);
+  if (Array.isArray(steamIds)) {
+    if (steamIds.length === 0) return [];
+    where.steamId = { ...(where.steamId || {}), [Op.in]: steamIds };
+  }
   const rows = await models.Profile.findAll({
     where,
     include: [{ model: models.CS2Inventory, as: 'cs2Inventory', required: false, attributes: [] }],

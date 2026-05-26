@@ -35,8 +35,8 @@ export const api = {
     get: (id) => unwrap(apiClient.get(`/cs2/${enc(id)}`)),
     fetch: (id) => unwrap(apiClient.post(`/cs2/${enc(id)}/fetch`, undefined, LONG)),
     stats: () => unwrap(apiClient.get('/cs2/stats')),
-    bulkStart: (id, force = false, concurrency, adaptive = false) =>
-      unwrap(apiClient.post(`/cs2/bulk/${enc(id)}`, { force, concurrency, adaptive })),
+    bulkStart: (id, opts = {}) =>
+      unwrap(apiClient.post(`/cs2/bulk/${enc(id)}`, opts)),
     bulkStatus: (id) => unwrap(apiClient.get(`/cs2/bulk/${enc(id)}/status`)),
     bulkActive: () => unwrap(apiClient.get('/cs2/bulk/active')),
   },

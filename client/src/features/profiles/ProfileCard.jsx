@@ -32,7 +32,7 @@ const gcUrl = (profile) => {
 
 const steamUrl = (profile) => profile?.profileUrl || `https://steamcommunity.com/profiles/${profile.steamId}`;
 
-export default function ProfileCard({ profile, compact = false }) {
+export default function ProfileCard({ profile, hideDelete = false }) {
   const { mutate: deleteOne } = useDeleteProfile();
   const fetchProfile = useFetchProfile();
   const fetchCs2 = useFetchCS2();
@@ -95,26 +95,16 @@ export default function ProfileCard({ profile, compact = false }) {
               )}
             </div>
           )}
-          {!compact && (
-            <>
-              <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
-                <span><span className="text-gray-500">Friends:</span> {profile.friendsCount ?? 0}</span>
-                <span><span className="text-gray-500">Updated:</span> {formatRelative(profile.updatedAt)}</span>
-                <span className="col-span-2 flex items-center gap-2 flex-wrap">
-                  <span>
-                    <span className="text-gray-500">Last badge:</span> {formatDate(profile.lastBadgeDate)}
-                  </span>
-                  {medals.length > 0 && <BadgesRow badges={medals} max={3} inline />}
-                </span>
-              </div>
-            </>
-          )}
-          {compact && (
-            <div className="mt-1 flex items-center gap-2 flex-wrap text-xs text-gray-400">
-              <span><span className="text-gray-500">Badge:</span> {formatDate(profile.lastBadgeDate)}</span>
+          <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
+            <span><span className="text-gray-500">Friends:</span> {profile.friendsCount ?? 0}</span>
+            <span><span className="text-gray-500">Updated:</span> {formatRelative(profile.updatedAt)}</span>
+            <span className="col-span-2 flex items-center gap-2 flex-wrap">
+              <span>
+                <span className="text-gray-500">Last badge:</span> {formatDate(profile.lastBadgeDate)}
+              </span>
               {medals.length > 0 && <BadgesRow badges={medals} max={3} inline />}
-            </div>
-          )}
+            </span>
+          </div>
           <div className="mt-2 flex flex-wrap items-center gap-1">
             <span className={`badge ${isPublic ? 'bg-emerald-700/30 text-emerald-200' : 'bg-gray-700/40 text-gray-300'}`}>
               {isPublic ? 'Public' : 'Private'}
@@ -158,7 +148,7 @@ export default function ProfileCard({ profile, compact = false }) {
           >
             GC
           </a>
-          {!compact && (
+          {!hideDelete && (
             <button onClick={() => setConfirm(true)} title="Delete" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
           )}
         </div>

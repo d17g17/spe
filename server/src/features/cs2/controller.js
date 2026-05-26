@@ -30,7 +30,10 @@ const bulkStart = async (req, res, next) => {
     const force = req.query?.force === 'true' || req.body?.force === true;
     const concurrency = req.body?.concurrency != null ? Number(req.body.concurrency) : undefined;
     const adaptive = req.body?.adaptive === true;
-    const state = await bulk.start(req.params.id, { force, concurrency, adaptive });
+    const { sortBy, sortDir, filters, search } = req.body || {};
+    const state = await bulk.start(req.params.id, {
+      force, concurrency, adaptive, sortBy, sortDir, filters, search,
+    });
     res.json(state);
   } catch (err) { next(err); }
 };

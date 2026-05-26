@@ -3,6 +3,7 @@ import { useFriends } from './useFriends.js';
 import { useFetchFriends } from './useFetchFriends.js';
 import ProfileCard from '../profiles/ProfileCard.jsx';
 import SearchBar from '../profiles/SearchBar.jsx';
+import FilterPanel from '../profiles/FilterPanel.jsx';
 import FriendStatistics from './FriendStatistics.jsx';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import BulkResultDialog from '../../components/BulkResultDialog.jsx';
@@ -38,9 +39,9 @@ const sortKey = (f, key) => {
 export default function FriendsList({ steamId, fetchStatus }) {
   const [search, setSearch] = useState('');
   const [sort, setSortRaw] = usePersistedState('friends.sort', 'smart:DESC');
-  // Guard against stale persisted values from older versions of the sort list.
   const setSort = setSortRaw;
   const activeSort = SORT_VALUES.has(sort) ? sort : 'smart:DESC';
+  const [filters, setFilters] = usePersistedState('friends.filters', {});
   const [bulkConcurrency, setBulkConcurrency] = usePersistedState('bulk.friends.concurrency', 4);
   const [bulkAdaptive, setBulkAdaptive] = usePersistedState('bulk.friends.adaptive', false);
   const friendsQuery = useFriends(steamId, { limit: 1000 });
@@ -50,15 +51,32 @@ export default function FriendsList({ steamId, fetchStatus }) {
   const friends = friendsQuery.data?.friends || [];
   const total = friendsQuery.data?.total || 0;
 
+  const passesFilters = (f, filt) => {
+    if (filt.country && (f.country || '').toUpperCase() !== String(filt.country).toUpperCase()) return false;
+    if (filt.personaState != null && filt.personaState !== '' && f.personaState !== Number(filt.personaState)) return false;
+    if (filt.visibilityState != null && filt.visibilityState !== '' && f.communityVisibilityState !== Number(filt.visibilityState)) return false;
+    if (filt.minFriends != null && filt.minFriends !== '' && (f.friendsCount ?? 0) < Number(filt.minFriends)) return false;
+    if (filt.maxFriends != null && filt.maxFriends !== '' && (f.friendsCount ?? 0) > Number(filt.maxFriends)) return false;
+    const boolKeys = ['vacBanned', 'gameBanned', 'tradeBanned', 'hasCyrillic'];
+    for (const k of boolKeys) {
+      const v = filt[k];
+      if (v === 'true' && !f[k]) return false;
+      if (v === 'false' && f[k]) return false;
+    }
+    return true;
+  };
+
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
-    let out = !term
-      ? friends.slice()
-      : friends.filter((f) =>
-          (f.name || '').toLowerCase().includes(term) ||
-          (f.steamId || '').includes(term) ||
-          (f.realName || '').toLowerCase().includes(term)
-        );
+    let out = friends.filter((f) => {
+      if (!passesFilters(f, filters)) return false;
+      if (!term) return true;
+      return (
+        (f.name || '').toLowerCase().includes(term) ||
+        (f.steamId || '').includes(term) ||
+        (f.realName || '').toLowerCase().includes(term)
+      );
+    });
     const [k, dir] = activeSort.split(':');
     const sign = dir === 'ASC' ? 1 : -1;
     out.sort((a, b) => {
@@ -68,7 +86,7 @@ export default function FriendsList({ steamId, fetchStatus }) {
       return sign * (av - bv);
     });
     return out;
-  }, [friends, search, activeSort]);
+  }, [friends, search, activeSort, filters]);
 
   const status = fetchStatus?.status || 'idle';
   const inProgress = status === 'starting' || status === 'in_progress';
@@ -108,7 +126,16 @@ export default function FriendsList({ steamId, fetchStatus }) {
   };
 
   const onBulk = (force = false) => {
-    startBulk.mutate({ ownerId: steamId, force, concurrency: bulkConcurrency, adaptive: bulkAdaptive }, {
+    const [sortBy, sortDir] = activeSort.split(':');
+    startBulk.mutate({
+      ownerId: steamId,
+      force,
+      concurrency: bulkConcurrency,
+      adaptive: bulkAdaptive,
+      sortBy,
+      sortDir,
+      filters,
+    }, {
       onSuccess: () => success(force ? 'Bulk inventory refresh started' : 'Bulk inventory fetch started'),
       onError: (e) => error(e?.response?.data?.error || e.message),
     });
@@ -212,6 +239,8 @@ export default function FriendsList({ steamId, fetchStatus }) {
         </select>
       </div>
 
+      <FilterPanel filters={filters} onChange={setFilters} />
+
       {friendsQuery.isLoading ? (
         <div className="text-gray-500 text-sm py-8 text-center">Loading friends…</div>
       ) : filtered.length === 0 ? (
@@ -220,7 +249,7 @@ export default function FriendsList({ steamId, fetchStatus }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-          {filtered.map((f) => <ProfileCard key={f.steamId} profile={f} compact />)}
+          {filtered.map((f) => <ProfileCard key={f.steamId} profile={f} hideDelete />)}
         </div>
       )}
 

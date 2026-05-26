@@ -4,6 +4,7 @@ const { Op } = require('sequelize');
 const { models } = require('../../db');
 const cs2Service = require('./service');
 const profilesService = require('../profiles/service');
+const profilesRepo = require('../profiles/repo');
 const friendsRepo = require('../friends/repo');
 const socketBus = require('../../socket');
 const logger = require('../../utils/logger');
@@ -34,7 +35,15 @@ const schedulePrune = (ownerId) => {
   setTimeout(() => active.delete(ownerId), 120_000).unref();
 };
 
-const start = async (ownerId, { force = false, concurrency, adaptive = false } = {}) => {
+const start = async (ownerId, {
+  force = false,
+  concurrency,
+  adaptive = false,
+  sortBy,
+  sortDir,
+  filters,
+  search,
+} = {}) => {
   const existing = active.get(ownerId);
   if (existing && (existing.status === 'starting' || existing.status === 'in_progress')) {
     return existing;
@@ -44,7 +53,27 @@ const start = async (ownerId, { force = false, concurrency, adaptive = false } =
     attributes: ['friendSteamId'],
     raw: true,
   });
-  const ids = friendships.map((f) => f.friendSteamId);
+  const friendIds = friendships.map((f) => f.friendSteamId);
+
+  // Apply caller-supplied sort + filters by piggy-backing on profilesRepo so the
+  // bulk job processes friends in the exact same order/selection the user has
+  // chosen on the home page.
+  let ids = friendIds;
+  if (friendIds.length > 0 && (sortBy || sortDir || filters || search)) {
+    try {
+      ids = await profilesRepo.listIds({ sortBy, sortDir, filters, search, steamIds: friendIds });
+      // Friends without a Profile row are dropped by listIds; preserve them by
+      // appending to the end so we still try to fetch them.
+      if (ids.length < friendIds.length) {
+        const seen = new Set(ids);
+        for (const id of friendIds) if (!seen.has(id)) ids.push(id);
+      }
+    } catch (err) {
+      logger.warn(`bulk cs2 friend sort/filter failed, falling back to raw order: ${err.message}`);
+      ids = friendIds;
+    }
+  }
+
   if (ids.length === 0) {
     const done = setStatus(ownerId, { status: 'complete', total: 0, processed: 0, errors: 0, skipped: 0 });
     emit(ownerId, 'complete', done);

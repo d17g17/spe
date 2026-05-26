@@ -14,8 +14,7 @@ export const useBulkInventoryStatus = (ownerId) =>
 export const useStartBulkInventory = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ ownerId, force = false, concurrency, adaptive = false }) =>
-      api.cs2.bulkStart(ownerId, force, concurrency, adaptive),
+    mutationFn: ({ ownerId, ...opts }) => api.cs2.bulkStart(ownerId, opts),
     onSuccess: (_data, { ownerId }) => {
       qc.invalidateQueries({ queryKey: ['cs2', 'bulk', ownerId] });
     },

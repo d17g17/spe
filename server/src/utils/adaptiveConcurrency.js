@@ -22,11 +22,15 @@ const FAST_RAMP_UNTIL = 12; // Below this target, ramp up aggressively.
 // - Rate-limited / hard failures: cut target in half (multiplicative decrease).
 // - Bounded by [min, max]. When `adaptive` is false, behaves as fixed semaphore.
 class AdaptiveConcurrency {
-  constructor({ initial = 4, min = 1, max = 20, adaptive = false } = {}) {
+  constructor({ initial, min = 1, max = 20, adaptive = false } = {}) {
     this.min = Math.max(1, min);
     this.max = Math.max(this.min, max);
     this.adaptive = Boolean(adaptive);
-    this.target = Math.max(this.min, Math.min(this.max, initial || (adaptive ? 4 : this.min)));
+    // Adaptive mode starts mid-pack (8) so first successes feel fast; fixed mode
+    // honours the caller's initial value (or falls back to min when unset).
+    const fallback = adaptive ? 8 : this.min;
+    const start = initial != null ? initial : fallback;
+    this.target = Math.max(this.min, Math.min(this.max, start));
     this.active = 0;
     this.consecutiveOk = 0;
     this.lastDecreaseAt = 0;

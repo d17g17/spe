@@ -98,7 +98,12 @@ const start = async (ownerId, { force = false, concurrency, adaptive = false } =
 
 const run = async (ownerId, ids, { initial = DEFAULT_CONCURRENCY, adaptive = false } = {}) => {
   setStatus(ownerId, { status: 'in_progress' });
-  const ctrl = new AdaptiveConcurrency({ initial, min: 1, max: MAX_CONCURRENCY, adaptive });
+  const ctrl = new AdaptiveConcurrency({
+    initial: adaptive ? undefined : initial,
+    min: 1,
+    max: MAX_CONCURRENCY,
+    adaptive,
+  });
   ctrl.setOnChange(({ target, reason }) => {
     setStatus(ownerId, { concurrency: target });
     logger.info(`bulk cs2 ${ownerId} adaptive concurrency -> ${target} (${reason})`);

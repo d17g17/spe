@@ -98,7 +98,9 @@ const start = async ({
 
 const run = async (ids) => {
   const ctrl = new AdaptiveConcurrency({
-    initial: state.concurrency,
+    // In adaptive mode let the controller pick its starting target (8). In
+    // fixed mode honour the slider value the user picked.
+    initial: state.adaptive ? undefined : state.concurrency,
     min: 1,
     max: MAX_CONCURRENCY,
     adaptive: state.adaptive,

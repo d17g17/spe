@@ -115,6 +115,16 @@ const start = async () => {
         steamApi: config.steamApiKey ? 'configured' : 'missing',
       });
     });
+    setImmediate(() => {
+      try {
+        const backfill = require('./src/features/cs2/backfill');
+        backfill.backfillRareTagsFromItems().catch((e) =>
+          logger.warn(`rare-tags backfill skipped: ${e.message}`)
+        );
+      } catch (e) {
+        logger.warn(`rare-tags backfill unavailable: ${e.message}`);
+      }
+    });
   } catch (err) {
     logger.error('startup failed', { error: err.message, stack: err.stack });
     process.exit(1);

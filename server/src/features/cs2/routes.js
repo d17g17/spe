@@ -7,6 +7,7 @@ const router = express.Router();
 
 router.get('/stats', c.stats);
 router.post('/backfill/medals', c.backfillMedals);
+router.post('/backfill/rare-tags', c.backfillRareTags);
 router.get('/bulk/active', c.bulkActive);
 router.get('/bulk/:id/status', c.bulkStatus);
 router.post('/bulk/:id', c.bulkStart);

@@ -5,6 +5,7 @@ const community = require('../../steam/community');
 const prices = require('../prices/service');
 const { extractStickers, itemRarityScore } = require('../../steam/stickers');
 const { extractTraits, traitScore } = require('../../steam/itemTraits');
+const { computeRareTags } = require('./rareDetect');
 const logger = require('../../utils/logger');
 
 const buildMarketHashName = (desc) => desc?.market_hash_name || desc?.market_name || desc?.name || null;
@@ -243,6 +244,8 @@ const fetchAndStore = async (profileId) => {
     .filter((i) => isMedalOrCoin(i.name))
     .map((i) => ({ title: i.name, icon: i.icon, quantity: i.quantity || 1 }));
 
+  const rareTags = computeRareTags(items);
+
   return upsert(profileId, {
     status: 'checked',
     totalValueUsd: Number(totalValue.toFixed(2)),
@@ -251,6 +254,7 @@ const fetchAndStore = async (profileId) => {
     totalItemsCount: processed.total,
     top5TradableItems: top5,
     notableItems: notable,
+    rareTags,
     medals,
     items,
     lastChecked: new Date(),

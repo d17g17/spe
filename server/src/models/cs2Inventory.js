@@ -24,6 +24,7 @@ module.exports = (sequelize, DataTypes) => {
       items: { type: DataTypes.JSON, allowNull: true },
       medals: { type: DataTypes.JSON, allowNull: true },
       notableItems: { type: DataTypes.JSON, allowNull: true, field: 'notable_items' },
+      rareTags: { type: DataTypes.JSON, allowNull: true, field: 'rare_tags' },
       status: {
         type: DataTypes.ENUM('checked', 'private', 'empty', 'error', 'skipped'),
         allowNull: false,

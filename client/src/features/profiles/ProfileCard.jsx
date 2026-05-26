@@ -6,6 +6,7 @@ import { useDeleteProfile, useFetchProfile } from './useProfiles.js';
 import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import InventoryBadge from '../cs2/InventoryBadge.jsx';
+import RareBadge from '../cs2/RareBadge.jsx';
 import BadgesRow from '../cs2/BadgesRow.jsx';
 import { LevelBadge, YearsBadge } from './SteamBadges.jsx';
 import { useState } from 'react';
@@ -111,6 +112,7 @@ export default function ProfileCard({ profile, compact = false }) {
             {profile.tradeBanned && <span className="badge bg-amber-700/40 text-amber-200">Trade ban</span>}
             {profile.hasCyrillic && <span className="badge bg-sky-700/40 text-sky-200">Cyrillic</span>}
             <InventoryBadge inventory={profile.cs2Inventory} />
+            <RareBadge inventory={profile.cs2Inventory} />
           </div>
         </div>
         <div className="flex flex-col items-center gap-1 shrink-0">

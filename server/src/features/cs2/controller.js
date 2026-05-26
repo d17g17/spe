@@ -50,4 +50,11 @@ const backfillMedals = async (_req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { get, fetch, stats, bulkStart, bulkStatus, bulkActive, backfillMedals };
+const backfillRareTags = async (_req, res, next) => {
+  try {
+    const result = await backfill.backfillRareTagsFromItems();
+    res.json(result);
+  } catch (err) { next(err); }
+};
+
+module.exports = { get, fetch, stats, bulkStart, bulkStatus, bulkActive, backfillMedals, backfillRareTags };

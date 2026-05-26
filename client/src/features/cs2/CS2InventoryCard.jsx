@@ -4,6 +4,7 @@ import { formatMoney, formatRelative, formatDate } from '../../utils/format.js';
 import { inventoryStatusInfo } from '../../utils/inventory.js';
 import InventoryBrowser from './InventoryBrowser.jsx';
 import BadgesRow from './BadgesRow.jsx';
+import RareBadge from './RareBadge.jsx';
 import StickerStrip, { RarityBadge, bestRarity } from './StickerStrip.jsx';
 
 export default function CS2InventoryCard({ steamId, lastBadgeDate }) {
@@ -20,6 +21,7 @@ export default function CS2InventoryCard({ steamId, lastBadgeDate }) {
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">CS2 Inventory</span>
           {info && <span className={`badge border ${info.color}`}>{info.label}</span>}
+          <RareBadge inventory={data} />
         </div>
         {items.length > 0 && (
           <button onClick={() => setBrowsing((v) => !v)} className="btn-ghost text-xs">

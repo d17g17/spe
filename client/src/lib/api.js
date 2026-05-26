@@ -20,6 +20,7 @@ export const api = {
     fetch: (id, force = false) => unwrap(apiClient.get(`/profiles/${enc(id)}/fetch`, { params: { force } })),
     delete: (id) => unwrap(apiClient.delete(`/profiles/${enc(id)}`)),
     deleteAll: () => unwrap(apiClient.delete('/profiles')),
+    setIgnored: (id, ignored) => unwrap(apiClient.put(`/profiles/${enc(id)}/ignored`, { ignored })),
     inventoryErrors: (steamIds) => unwrap(apiClient.post('/profiles/inventory-errors', { steamIds })),
     fetchAllStart: (opts = {}) => unwrap(apiClient.post('/profiles/fetch-all', opts)),
     fetchAllStatus: () => unwrap(apiClient.get('/profiles/fetch-all/status')),

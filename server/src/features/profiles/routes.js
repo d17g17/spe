@@ -13,6 +13,7 @@ router.get('/fetch-all/status', c.fetchAllStatus);
 router.post('/fetch-all/cancel', c.fetchAllCancel);
 
 router.get('/:id/fetch', c.fetchOne);
+router.put('/:id/ignored', c.setIgnored);
 router.get('/:id', c.getOne);
 router.delete('/:id', c.deleteOne);
 

@@ -45,6 +45,10 @@ module.exports = (sequelize, DataTypes) => {
       vacBanned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       gameBanned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
       tradeBanned: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      gcNickname: { type: DataTypes.STRING(128), allowNull: true, field: 'gc_nickname' },
+      gcPlayerId: { type: DataTypes.STRING(32), allowNull: true, field: 'gc_player_id' },
+      gcChecked: { type: DataTypes.DATE, allowNull: true, field: 'gc_checked' },
+      ignored: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
     },
     { sequelize, modelName: 'Profile' }
   );

@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatRelative, formatDate } from '../../utils/format.js';
 import Flag from '../../components/Flag.jsx';
-import { useDeleteProfile, useFetchProfile } from './useProfiles.js';
+import { useDeleteProfile, useFetchProfile, useIgnoreProfile } from './useProfiles.js';
 import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import InventoryBadge from '../cs2/InventoryBadge.jsx';
@@ -32,8 +32,9 @@ const gcUrl = (profile) => {
 
 const steamUrl = (profile) => profile?.profileUrl || `https://steamcommunity.com/profiles/${profile.steamId}`;
 
-export default function ProfileCard({ profile, hideDelete = false }) {
+export default function ProfileCard({ profile }) {
   const { mutate: deleteOne } = useDeleteProfile();
+  const { mutate: setIgnored } = useIgnoreProfile();
   const fetchProfile = useFetchProfile();
   const fetchCs2 = useFetchCS2();
   const { success, error } = useNotifications();
@@ -148,18 +149,32 @@ export default function ProfileCard({ profile, hideDelete = false }) {
           >
             GC
           </a>
-          {!hideDelete && (
-            <button onClick={() => setConfirm(true)} title="Delete" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
-          )}
+          <button onClick={() => setConfirm(true)} title="Delete or hide" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
         </div>
       </div>
       {confirm && (
         <ConfirmationDialog
-          title="Delete profile?"
-          message={`Remove ${profile.name || profile.steamId} from your library.`}
+          title={profile.ignored ? 'Remove profile?' : 'Delete or hide profile?'}
+          message={
+            profile.ignored
+              ? `${profile.name || profile.steamId} is currently hidden. Delete entirely or unhide?`
+              : `Delete ${profile.name || profile.steamId} permanently, or just hide it so it stops appearing and won't be fetched.`
+          }
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          secondaryLabel={profile.ignored ? 'Unhide' : 'Hide'}
           onConfirm={() => {
             deleteOne(profile.steamId, {
               onSuccess: () => { success('Profile deleted'); setConfirm(false); },
+              onError: (e) => { error(e.message); setConfirm(false); },
+            });
+          }}
+          onSecondary={() => {
+            setIgnored({ id: profile.steamId, ignored: !profile.ignored }, {
+              onSuccess: () => {
+                success(profile.ignored ? 'Profile unhidden' : 'Profile hidden');
+                setConfirm(false);
+              },
               onError: (e) => { error(e.message); setConfirm(false); },
             });
           }}

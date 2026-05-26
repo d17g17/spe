@@ -1,6 +1,15 @@
 import { motion } from 'framer-motion';
 
-export default function ConfirmationDialog({ title, message, confirmLabel = 'Confirm', cancelLabel = 'Cancel', onConfirm, onCancel }) {
+export default function ConfirmationDialog({
+  title,
+  message,
+  confirmLabel = 'Confirm',
+  cancelLabel = 'Cancel',
+  secondaryLabel,
+  onConfirm,
+  onCancel,
+  onSecondary,
+}) {
   return (
     <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={onCancel}>
       <motion.div
@@ -13,6 +22,9 @@ export default function ConfirmationDialog({ title, message, confirmLabel = 'Con
         {message && <p className="text-sm text-gray-300 mb-4">{message}</p>}
         <div className="flex justify-end gap-2">
           <button onClick={onCancel} className="btn-ghost text-sm">{cancelLabel}</button>
+          {onSecondary && secondaryLabel && (
+            <button onClick={onSecondary} className="btn-secondary text-sm">{secondaryLabel}</button>
+          )}
           <button onClick={onConfirm} className="btn-danger text-sm">{confirmLabel}</button>
         </div>
       </motion.div>

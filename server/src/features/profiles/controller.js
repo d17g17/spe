@@ -10,7 +10,7 @@ const list = async (req, res, next) => {
       sortBy, sortDir, limit, offset, search,
       country, vacBanned, gameBanned, tradeBanned,
       hasCyrillic, personaState, visibilityState,
-      minFriends, maxFriends,
+      minFriends, maxFriends, includeIgnored,
     } = req.query;
 
     const out = await service.list({
@@ -29,6 +29,7 @@ const list = async (req, res, next) => {
         visibilityState: visibilityState != null && visibilityState !== '' ? Number(visibilityState) : undefined,
         minFriends: minFriends != null && minFriends !== '' ? Number(minFriends) : undefined,
         maxFriends: maxFriends != null && maxFriends !== '' ? Number(maxFriends) : undefined,
+        includeIgnored: includeIgnored === 'true',
       },
     });
     res.json(out);
@@ -62,6 +63,14 @@ const deleteOne = async (req, res, next) => {
   try {
     const n = await service.remove(req.params.id);
     res.json({ deleted: n });
+  } catch (err) { next(err); }
+};
+
+const setIgnored = async (req, res, next) => {
+  try {
+    const ignored = req.body?.ignored === true || req.body?.ignored === 'true';
+    const n = await service.setIgnored(req.params.id, ignored);
+    res.json({ updated: n, ignored });
   } catch (err) { next(err); }
 };
 
@@ -105,6 +114,6 @@ const fetchAllCancel = async (_req, res, next) => {
 };
 
 module.exports = {
-  list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors,
+  list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors, setIgnored,
   fetchAllStart, fetchAllStatus, fetchAllCancel,
 };

@@ -45,6 +45,14 @@ export const useDeleteProfile = () => {
   });
 };
 
+export const useIgnoreProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ignored }) => api.profiles.setIgnored(id, ignored),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['profiles'] }),
+  });
+};
+
 export const useDeleteAllProfiles = () => {
   const qc = useQueryClient();
   return useMutation({

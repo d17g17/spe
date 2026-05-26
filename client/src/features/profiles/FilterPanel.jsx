@@ -53,6 +53,14 @@ export default function FilterPanel({ filters, onChange }) {
               </select>
             </label>
           ))}
+          <label className="text-xs text-gray-400 flex items-end gap-2 col-span-2 md:col-span-1">
+            <input
+              type="checkbox"
+              checked={Boolean(filters.includeIgnored)}
+              onChange={(e) => update('includeIgnored', e.target.checked ? true : undefined)}
+            />
+            <span>Show hidden profiles</span>
+          </label>
         </div>
       )}
     </div>

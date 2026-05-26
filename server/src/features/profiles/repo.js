@@ -19,8 +19,18 @@ const upsert = async (profileShape) => {
 const deleteById = (steamId) => models.Profile.destroy({ where: { steamId } });
 const deleteAll = () => models.Profile.destroy({ where: {}, truncate: false });
 
+const setIgnored = async (steamId, ignored) => {
+  const [n] = await models.Profile.update(
+    { ignored: Boolean(ignored) },
+    { where: { steamId } }
+  );
+  return n;
+};
+
 const buildWhere = (filters = {}, search = '') => {
   const where = {};
+  // Hide ignored profiles by default; opt-in via filters.includeIgnored.
+  if (!filters.includeIgnored) where.ignored = false;
   if (search) {
     where[Op.or] = [
       { steamId: { [Op.like]: `%${search}%` } },
@@ -113,4 +123,4 @@ const findWithInventoryError = async (steamIds) => {
   return rows.map((r) => r.toJSON());
 };
 
-module.exports = { findById, upsert, deleteById, deleteAll, list, listIds, findWithInventoryError, sequelize };
+module.exports = { findById, upsert, deleteById, deleteAll, list, listIds, findWithInventoryError, setIgnored, sequelize };

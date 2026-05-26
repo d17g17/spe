@@ -86,4 +86,6 @@ const list = (opts) => repo.list(opts);
 
 const withInventoryErrors = (ids) => repo.findWithInventoryError(ids);
 
-module.exports = { getOrFetch, getLocal, remove, removeAll, list, withInventoryErrors, fetchFullFromSteam };
+const setIgnored = (steamId, ignored) => repo.setIgnored(steamId, ignored);
+
+module.exports = { getOrFetch, getLocal, remove, removeAll, list, withInventoryErrors, setIgnored, fetchFullFromSteam };

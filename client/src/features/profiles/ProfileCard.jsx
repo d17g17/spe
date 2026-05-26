@@ -21,6 +21,13 @@ const PERSONA_COLORS = {
   6: 'bg-sky-600',
 };
 
+const gcUrl = (profile) => {
+  if (profile?.profileUrl) {
+    return profile.profileUrl.replace(/^https?:\/\/steamcommunity\.com/i, 'https://gcsteamcommunity.com');
+  }
+  return `https://gcsteamcommunity.com/profiles/${profile.steamId}`;
+};
+
 export default function ProfileCard({ profile, compact = false }) {
   const { mutate: deleteOne } = useDeleteProfile();
   const fetchProfile = useFetchProfile();
@@ -64,7 +71,15 @@ export default function ProfileCard({ profile, compact = false }) {
             {profile.steamLevel != null && <LevelBadge level={profile.steamLevel} />}
             {profile.timeCreated && <YearsBadge timeCreated={profile.timeCreated} />}
           </Link>
-          <div className="text-xs text-gray-500 truncate">{profile.steamId}</div>
+          <div className="text-xs truncate">
+            {profile.realName && (
+              <>
+                <span className="text-gray-400" title={profile.realName}>{profile.realName}</span>
+                <span className="text-gray-600 mx-1.5">·</span>
+              </>
+            )}
+            <span className="text-gray-500">{profile.steamId}</span>
+          </div>
           {!compact && (
             <>
               <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs text-gray-400">
@@ -107,6 +122,16 @@ export default function ProfileCard({ profile, compact = false }) {
           >
             {refreshing ? '…' : '↻'}
           </button>
+          <a
+            href={gcUrl(profile)}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title="Open on GamersClub"
+            className="text-[10px] font-bold text-amber-400 hover:text-amber-300 leading-none"
+          >
+            GC
+          </a>
           {!compact && (
             <button onClick={() => setConfirm(true)} title="Delete" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
           )}

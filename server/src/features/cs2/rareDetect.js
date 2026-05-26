@@ -6,7 +6,6 @@
 // rifles, sticker bombs) is NOT flagged here -- that's already obvious from the
 // price badge.
 
-const GOLD_RE = /\(Gold\)/i;
 const LENTICULAR_RE = /\(Lenticular\)/i;
 
 // 2013-2016 tournament holos only (2017+ excluded -- too young / not blue-chip)
@@ -54,9 +53,7 @@ const computeRareTags = (items) => {
     // empty stickers arrays and won't trigger here.
     for (const s of it.stickers || []) {
       const sn = s.name || '';
-      if (s.rarity === 'gold' || GOLD_RE.test(sn)) {
-        push('gold-sticker', 'Gold sticker (applied)', `${sn} on ${name}`);
-      } else if (s.rarity === 'lenticular' || LENTICULAR_RE.test(sn)) {
+      if (s.rarity === 'lenticular' || LENTICULAR_RE.test(sn)) {
         push('lenticular-sticker', 'Lenticular sticker (applied)', `${sn} on ${name}`);
       } else if (s.rarity === 'holo' && LEGENDARY_HOLO_RE.test(sn)) {
         push('legendary-holo', 'Legendary holo (applied)', `${sn} on ${name}`);

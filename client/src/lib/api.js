@@ -17,7 +17,11 @@ export const api = {
   profiles: {
     list: (params) => unwrap(apiClient.get('/profiles', { params })),
     get: (id) => unwrap(apiClient.get(`/profiles/${enc(id)}`)),
-    fetch: (id, force = false) => unwrap(apiClient.get(`/profiles/${enc(id)}/fetch`, { params: { force } })),
+    fetch: (id, force = false, { inventory = false } = {}) =>
+      unwrap(apiClient.get(`/profiles/${enc(id)}/fetch`, {
+        params: { force, ...(inventory ? { inventory: '1' } : {}) },
+        ...(inventory ? LONG : {}),
+      })),
     delete: (id) => unwrap(apiClient.delete(`/profiles/${enc(id)}`)),
     deleteAll: () => unwrap(apiClient.delete('/profiles')),
     setIgnored: (id, ignored) => unwrap(apiClient.put(`/profiles/${enc(id)}/ignored`, { ignored })),
@@ -68,6 +72,16 @@ export const api = {
       responseType: 'text',
       transformResponse: (v) => v,
     }).then((r) => r.data),
+  },
+  breach: {
+    // Server-side caps at 30s. Don't use LONG here -- a stuck request must let
+    // the client timeout fire and surface partial results to the UI.
+    search: (payload, opts = {}) => unwrap(apiClient.post('/breach/search', payload, { timeout: 35000, ...opts })),
+    fields: () => unwrap(apiClient.get('/breach/fields')),
+    cacheList: (steamId) => unwrap(apiClient.get(`/breach/cache/${enc(steamId)}`)),
+    cacheSave: (profileId, items) => unwrap(apiClient.post('/breach/cache', { profileId, items })),
+    cacheDelete: (id) => unwrap(apiClient.delete(`/breach/cache/${enc(id)}`)),
+    cacheClearProfile: (steamId) => unwrap(apiClient.delete(`/breach/cache/profile/${enc(steamId)}`)),
   },
   health: () => unwrap(apiClient.get('/health')),
 };

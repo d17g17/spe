@@ -47,12 +47,16 @@ const getOne = async (req, res, next) => {
 const fetchOne = async (req, res, next) => {
   try {
     const force = req.query.force === 'true';
-    const { profile, fromCache, error } = await service.getOrFetch(req.params.id, { force });
+    const withInventory = req.query.inventory === 'true' || req.query.inventory === '1';
+    const result = withInventory
+      ? await service.getOrFetchWithInventory(req.params.id, { force })
+      : await service.getOrFetch(req.params.id, { force });
+    const { profile, fromCache, inventory, inventoryError, error } = result;
     if (error) {
       const status = error === 'invalid-identifier' ? 400 : 404;
       return res.status(status).json({ error });
     }
-    res.json({ profile, fromCache });
+    res.json({ profile, fromCache, inventory, inventoryError });
   } catch (err) {
     logger.error(`fetchOne failed: ${err.message}`);
     next(err);

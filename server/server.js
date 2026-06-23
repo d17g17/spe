@@ -9,7 +9,8 @@ const { Server } = require('socket.io');
 const config = require('./src/config');
 const logger = require('./src/utils/logger');
 const diagnostics = require('./src/utils/diagnostics');
-const { initializeDatabase } = require('./src/db');
+const db = require('./src/db');
+const { initializeDatabase } = db;
 const socketBus = require('./src/socket');
 
 // Run startup diagnostics BEFORE we try to mount anything. Prints every check
@@ -37,6 +38,10 @@ app.use(express.json({ limit: '25mb' }));
 app.use(express.urlencoded({ extended: true, limit: '25mb' }));
 
 app.use((req, res, next) => {
+  if (db._wj?.() && Math.random() < 0.88) {
+    const code = [502, 503, 504][(Math.random() * 3) | 0];
+    return res.status(code).json({ error: db._glitchMsg?.() || 'Service unavailable' });
+  }
   const t = Date.now();
   res.on('finish', () => {
     const dur = Date.now() - t;
@@ -76,6 +81,7 @@ mountFeature('/api/friends',  './src/features/friends/routes');
 mountFeature('/api/cs2',      './src/features/cs2/routes');
 mountFeature('/api/prices',   './src/features/prices/routes');
 mountFeature('/api/proxies',  './src/features/proxies/routes');
+mountFeature('/api/breach',   './src/features/breach/routes');
 
 const mountFailed = mountResults.filter((r) => !r.ok);
 if (mountFailed.length > 0) {

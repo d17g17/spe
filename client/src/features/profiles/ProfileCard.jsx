@@ -12,6 +12,7 @@ import { LevelBadge, YearsBadge } from './SteamBadges.jsx';
 import { useState } from 'react';
 import ConfirmationDialog from '../../components/ConfirmationDialog.jsx';
 import useLocation from '../../utils/useLocation.js';
+import { useSidePanel } from '../../state/SidePanelContext.jsx';
 
 const PERSONA_COLORS = {
   0: 'bg-gray-700',
@@ -32,12 +33,24 @@ const gcUrl = (profile) => {
 
 const steamUrl = (profile) => profile?.profileUrl || `https://steamcommunity.com/profiles/${profile.steamId}`;
 
+// Decide whether a Steam display name is worth using as a breach search term.
+// Filters out blanks, all-digit names (often the steamid), very short names,
+// and trivial placeholders. Used to skip a pointless second API call.
+const isUsefulName = (name, steamId) => {
+  if (!name) return false;
+  if (name === steamId) return false;
+  if (name.length < 3) return false;
+  if (/^\d+$/.test(name)) return false;
+  return true;
+};
+
 export default function ProfileCard({ profile }) {
   const { mutate: deleteOne } = useDeleteProfile();
   const { mutate: setIgnored } = useIgnoreProfile();
   const fetchProfile = useFetchProfile();
   const fetchCs2 = useFetchCS2();
   const { success, error } = useNotifications();
+  const { openBreach } = useSidePanel();
   const [confirm, setConfirm] = useState(false);
   const ps = profile.personaState ?? 0;
   const dot = PERSONA_COLORS[ps] || PERSONA_COLORS[0];
@@ -56,6 +69,32 @@ export default function ProfileCard({ profile }) {
     });
     fetchCs2.mutate(profile.steamId, {
       onError: (err) => error(err?.response?.data?.error || err.message),
+    });
+  };
+
+  const onBreachLookup = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const queries = [{ term: profile.steamId, fields: ['steamid'] }];
+    // Real name (the "real name" field on Steam) matched against breach `name`
+    const realName = (profile.realName || '').trim();
+    if (isUsefulName(realName, profile.steamId)) {
+      queries.push({ term: realName, fields: ['name'] });
+    }
+    // Display/persona name (Steam handle) matched against breach `username`
+    const personaName = (profile.name || '').trim();
+    if (isUsefulName(personaName, profile.steamId) && personaName !== realName) {
+      queries.push({ term: personaName, fields: ['username'] });
+    }
+    openBreach({
+      queries,
+      autoRun: true,
+      subject: {
+        steamId: profile.steamId,
+        name: profile.name || null,
+        realName: profile.realName || null,
+        avatarUrl: profile.avatarUrl || null,
+      },
     });
   };
 
@@ -149,6 +188,13 @@ export default function ProfileCard({ profile }) {
           >
             GC
           </a>
+          <button
+            onClick={onBreachLookup}
+            title="Breach lookup"
+            className="text-[10px] font-bold text-rose-400 hover:text-rose-300 leading-none"
+          >
+            BR
+          </button>
           <button onClick={() => setConfirm(true)} title="Delete or hide" className="text-gray-500 hover:text-red-400 text-sm">✕</button>
         </div>
       </div>

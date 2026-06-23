@@ -5,25 +5,34 @@ import { useNotifications } from '../../state/NotificationContext.jsx';
 
 export default function ProfileFetchForm() {
   const [input, setInput] = useState('');
-  const { mutate, isPending } = useFetchProfile();
+  const fetchProfile = useFetchProfile();
   const { success, error } = useNotifications();
   const navigate = useNavigate();
+  const busy = fetchProfile.isPending;
 
-  const submit = (e) => {
+  const submit = async (e) => {
     e.preventDefault();
     const trimmed = input.trim();
     if (!trimmed) return;
-    mutate({ id: trimmed, force: false }, {
-      onSuccess: (data) => {
-        const id = data?.profile?.steamId;
-        if (id) {
-          success(data.fromCache ? 'Loaded from cache' : 'Fetched from Steam');
-          navigate(`/profile/${id}`);
-          setInput('');
-        }
-      },
-      onError: (e) => error(e?.response?.data?.error || e.message || 'Fetch failed'),
-    });
+    try {
+      const data = await fetchProfile.mutateAsync({
+        id: trimmed,
+        force: true,
+        inventory: true,
+      });
+      const id = data?.profile?.steamId;
+      if (!id) return;
+      if (data.inventoryError) {
+        success('Profile refreshed');
+        error(data.inventoryError);
+      } else {
+        success('Profile and inventory refreshed');
+      }
+      navigate(`/profile/${id}`);
+      setInput('');
+    } catch (err) {
+      error(err?.response?.data?.error || err.message || 'Fetch failed');
+    }
   };
 
   return (
@@ -34,10 +43,10 @@ export default function ProfileFetchForm() {
         onChange={(e) => setInput(e.target.value)}
         placeholder="SteamID, profile URL, or vanity name"
         className="input flex-1"
-        disabled={isPending}
+        disabled={busy}
       />
-      <button type="submit" disabled={isPending || !input.trim()} className="btn-primary text-sm whitespace-nowrap">
-        {isPending ? 'Fetching…' : 'Fetch profile'}
+      <button type="submit" disabled={busy || !input.trim()} className="btn-primary text-sm whitespace-nowrap">
+        {busy ? 'Fetching…' : 'Fetch profile'}
       </button>
     </form>
   );

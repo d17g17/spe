@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useProfile, useFetchProfile, useDeleteProfile } from '../profiles/useProfiles.js';
 import ProfileHeader from './ProfileHeader.jsx';
 import FriendsList from '../friends/FriendsList.jsx';
+import SavedBreachPanel from '../breach/SavedBreachPanel.jsx';
 import useProfileSocket from './useProfileSocket.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import { useSettings } from '../../state/SettingsContext.jsx';
@@ -75,6 +76,7 @@ export default function ProfilePage() {
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4 max-w-7xl mx-auto">
       <ProfileHeader profile={profile} onRefresh={onRefresh} onDelete={onDelete} refreshing={refreshing} />
+      <SavedBreachPanel profile={profile} />
       <FriendsList steamId={steamId} fetchStatus={socketStatus} />
       {confirm && (
         <ConfirmationDialog

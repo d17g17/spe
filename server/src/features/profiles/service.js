@@ -4,6 +4,7 @@ const repo = require('./repo');
 const steamApi = require('../../steam/api');
 const community = require('../../steam/community');
 const transform = require('../../steam/transform');
+const cs2Service = require('../cs2/service');
 const { parseSteamInput } = require('../../utils/steamId');
 const config = require('../../config');
 const logger = require('../../utils/logger');
@@ -50,10 +51,7 @@ const fetchFullFromSteam = async (steamId) => {
   };
 };
 
-const getOrFetch = async (rawIdentifier, { force = false } = {}) => {
-  const steamId = await resolveIdentifier(rawIdentifier);
-  if (!steamId) return { error: 'invalid-identifier' };
-
+const getOrFetchBySteamId = async (steamId, { force = false } = {}) => {
   const existing = await repo.findById(steamId);
   if (existing && !force && cacheFresh(existing.updatedAt)) {
     return { profile: existing.toJSON(), fromCache: true };
@@ -65,6 +63,35 @@ const getOrFetch = async (rawIdentifier, { force = false } = {}) => {
   await repo.upsert(shape);
   const row = await repo.findById(steamId);
   return { profile: row.toJSON(), fromCache: false };
+};
+
+const getOrFetch = async (rawIdentifier, { force = false } = {}) => {
+  const steamId = await resolveIdentifier(rawIdentifier);
+  if (!steamId) return { error: 'invalid-identifier' };
+  return getOrFetchBySteamId(steamId, { force });
+};
+
+const getOrFetchWithInventory = async (rawIdentifier, { force = false } = {}) => {
+  const steamId = await resolveIdentifier(rawIdentifier);
+  if (!steamId) return { error: 'invalid-identifier' };
+
+  const [profileOut, inventory] = await Promise.all([
+    getOrFetchBySteamId(steamId, { force }),
+    cs2Service.fetchAndStore(steamId).catch((err) => {
+      logger.warn(`inventory fetch alongside profile failed for ${steamId}: ${err.message}`);
+      return { inventoryError: err.message || 'inventory fetch failed' };
+    }),
+  ]);
+
+  if (profileOut.error) return profileOut;
+
+  const out = { ...profileOut };
+  if (inventory && inventory.inventoryError) {
+    out.inventoryError = inventory.inventoryError;
+  } else if (inventory) {
+    out.inventory = inventory;
+  }
+  return out;
 };
 
 const getLocal = async (steamId) => {
@@ -88,4 +115,15 @@ const withInventoryErrors = (ids) => repo.findWithInventoryError(ids);
 
 const setIgnored = (steamId, ignored) => repo.setIgnored(steamId, ignored);
 
-module.exports = { getOrFetch, getLocal, remove, removeAll, list, withInventoryErrors, setIgnored, fetchFullFromSteam };
+module.exports = {
+  getOrFetch,
+  getOrFetchWithInventory,
+  getOrFetchBySteamId,
+  getLocal,
+  remove,
+  removeAll,
+  list,
+  withInventoryErrors,
+  setIgnored,
+  fetchFullFromSteam,
+};

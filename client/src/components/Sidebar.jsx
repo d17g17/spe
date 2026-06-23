@@ -1,19 +1,21 @@
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import ItemPriceManager from '../features/prices/ItemPriceManager.jsx';
 import ProxyManager from '../features/proxies/ProxyManager.jsx';
+import BreachSearch from '../features/breach/BreachSearch.jsx';
 import SettingsPanel from './SettingsPanel.jsx';
+import { useSidePanel } from '../state/SidePanelContext.jsx';
 
 export default function Sidebar() {
-  const [panel, setPanel] = useState(null); // 'prices' | 'proxies' | 'settings' | null
+  const { panel, setPanel, closePanel } = useSidePanel();
 
   const open = (id) => setPanel(id);
-  const close = () => setPanel(null);
+  const close = closePanel;
 
   const widths = {
     prices: 'max-w-2xl',
     proxies: 'max-w-2xl',
+    breach: 'max-w-2xl',
     settings: 'max-w-md',
   };
 
@@ -23,6 +25,7 @@ export default function Sidebar() {
         <Link to="/" title="Profiles" className="w-10 h-10 rounded-md bg-sky-600/20 hover:bg-sky-600/40 text-sky-300 flex items-center justify-center text-lg font-bold">S</Link>
         <SideBtn label="Item prices" symbol="$" active={panel === 'prices'} onClick={() => open('prices')} />
         <SideBtn label="Proxies" symbol="⇆" active={panel === 'proxies'} onClick={() => open('proxies')} />
+        <SideBtn label="Breach lookup" symbol="🔎" active={panel === 'breach'} onClick={() => open('breach')} />
         <SideBtn label="Settings" symbol="⚙" active={panel === 'settings'} onClick={() => open('settings')} />
       </aside>
       <AnimatePresence>
@@ -37,6 +40,7 @@ export default function Sidebar() {
           >
             {panel === 'prices' && <ItemPriceManager onClose={close} />}
             {panel === 'proxies' && <ProxyManager onClose={close} />}
+            {panel === 'breach' && <BreachSearch onClose={close} />}
             {panel === 'settings' && <SettingsPanel onClose={close} />}
           </motion.div>
         )}

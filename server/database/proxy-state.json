@@ -1,5 +1,342 @@
 {
   "disabled": [],
   "proxiesEnabled": true,
-  "testResults": {}
+  "testResults": {
+    "217.154.155.115:8080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 320,
+      "error": null,
+      "at": 1781107504165
+    },
+    "193.221.203.192:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 376,
+      "error": null,
+      "at": 1781107504187
+    },
+    "213.199.47.140:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 402,
+      "error": null,
+      "at": 1781107504217
+    },
+    "130.49.218.108:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 449,
+      "error": null,
+      "at": 1781107507505
+    },
+    "5.255.99.75:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 513,
+      "error": null,
+      "at": 1781107504311
+    },
+    "5.255.113.177:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 533,
+      "error": null,
+      "at": 1781107504324
+    },
+    "152.53.52.47:1080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 405,
+      "error": null,
+      "at": 1781107507495
+    },
+    "132.145.189.203:1081": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 550,
+      "error": null,
+      "at": 1781107504617
+    },
+    "107.150.61.226:8888": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 628,
+      "error": null,
+      "at": 1781107504446
+    },
+    "84.201.144.65:10005": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 645,
+      "error": null,
+      "at": 1781107504449
+    },
+    "152.53.144.223:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 390,
+      "error": null,
+      "at": 1781107504563
+    },
+    "202.28.194.139:31280": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 813,
+      "error": null,
+      "at": 1781107504575
+    },
+    "2.26.87.216:1080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 632,
+      "error": null,
+      "at": 1781107508201
+    },
+    "45.192.9.27:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 338,
+      "error": null,
+      "at": 1781107504662
+    },
+    "5.75.199.246:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 905,
+      "error": null,
+      "at": 1781107507498
+    },
+    "98.178.72.30:4145": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 1045,
+      "error": null,
+      "at": 1781107504797
+    },
+    "5.255.103.55:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 1244,
+      "error": null,
+      "at": 1781107505024
+    },
+    "37.49.224.243:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 1241,
+      "error": null,
+      "at": 1781107505030
+    },
+    "107.150.61.226:8886": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 446,
+      "error": null,
+      "at": 1781107506622
+    },
+    "134.122.1.61:11679": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 949,
+      "error": null,
+      "at": 1781107505513
+    },
+    "47.89.245.39:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 1864,
+      "error": null,
+      "at": 1781107505637
+    },
+    "206.123.156.231:4048": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 1636,
+      "error": null,
+      "at": 1781107506060
+    },
+    "167.71.42.89:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 260,
+      "error": null,
+      "at": 1781107506069
+    },
+    "94.241.175.40:10808": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 343,
+      "error": null,
+      "at": 1781107515513
+    },
+    "185.125.102.149:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 261,
+      "error": null,
+      "at": 1781107506635
+    },
+    "65.109.29.104:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 2866,
+      "error": null,
+      "at": 1781107506676
+    },
+    "206.123.156.231:5644": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 2954,
+      "error": null,
+      "at": 1781107506703
+    },
+    "185.125.171.171:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 668,
+      "error": null,
+      "at": 1781107506738
+    },
+    "157.245.143.65:7890": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 3120,
+      "error": null,
+      "at": 1781107506915
+    },
+    "5.255.123.162:1080": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 439,
+      "error": null,
+      "at": 1781107507286
+    },
+    "65.109.181.66:1080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 229,
+      "error": null,
+      "at": 1781107507524
+    },
+    "206.123.156.225:6306": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 3991,
+      "error": null,
+      "at": 1781107507784
+    },
+    "4.221.164.109:9443": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 4558,
+      "error": null,
+      "at": 1781107508331
+    },
+    "206.123.156.220:7384": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 4194,
+      "error": null,
+      "at": 1781107508509
+    },
+    "206.123.156.222:22032": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 5719,
+      "error": null,
+      "at": 1781107509496
+    },
+    "206.123.156.230:11075": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 6611,
+      "error": null,
+      "at": 1781107510397
+    },
+    "200.174.198.32:8888": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 1495,
+      "error": null,
+      "at": 1781107510774
+    },
+    "34.43.46.91:80": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 417,
+      "error": null,
+      "at": 1781107514842
+    },
+    "4.221.164.109:443": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 3560,
+      "error": null,
+      "at": 1781107510778
+    },
+    "43.160.236.170:8118": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 712,
+      "error": null,
+      "at": 1781107510779
+    },
+    "85.105.165.223:3310": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 1896,
+      "error": null,
+      "at": 1781107510779
+    },
+    "117.236.124.166:3128": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 673,
+      "error": null,
+      "at": 1781107510795
+    },
+    "5.78.60.155:8080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 597,
+      "error": null,
+      "at": 1781107511321
+    },
+    "206.123.156.231:8378": {
+      "ok": true,
+      "protocol": "socks5",
+      "latencyMs": 3770,
+      "error": null,
+      "at": 1781107510957
+    },
+    "62.133.62.184:1082": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 5762,
+      "error": null,
+      "at": 1781107511040
+    },
+    "34.43.46.91:443": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 412,
+      "error": null,
+      "at": 1781107511167
+    },
+    "81.177.214.151:8080": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 1358,
+      "error": null,
+      "at": 1781107511402
+    },
+    "185.200.188.234:10001": {
+      "ok": true,
+      "protocol": "http",
+      "latencyMs": 520,
+      "error": null,
+      "at": 1781107511573
+    }
+  }
 }

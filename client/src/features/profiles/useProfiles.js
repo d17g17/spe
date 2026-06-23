@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { api } from '../../lib/api.js';
+import { cs2Key } from '../cs2/useCS2Inventory.js';
 import { on as socketOn } from '../../lib/socket.js';
 
 const BULK_KEY = ['profiles', 'bulkAll'];
@@ -26,11 +27,13 @@ export const useProfile = (id) =>
 export const useFetchProfile = () => {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, force = false }) => api.profiles.fetch(id, force),
+    mutationFn: ({ id, force = false, inventory = false }) =>
+      api.profiles.fetch(id, force, { inventory }),
     onSuccess: (data) => {
       const id = data?.profile?.steamId;
       if (id) {
         qc.setQueryData(profileKey(id), data.profile);
+        if (data.inventory) qc.setQueryData(cs2Key(id), data.inventory);
       }
       qc.invalidateQueries({ queryKey: ['profiles', 'list'] });
     },

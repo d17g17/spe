@@ -30,6 +30,7 @@ const list = async (req, res, next) => {
         minFriends: minFriends != null && minFriends !== '' ? Number(minFriends) : undefined,
         maxFriends: maxFriends != null && maxFriends !== '' ? Number(maxFriends) : undefined,
         includeIgnored: includeIgnored === 'true',
+        isStarred: req.query.isStarred === 'true',
       },
     });
     res.json(out);
@@ -117,7 +118,15 @@ const fetchAllCancel = async (_req, res, next) => {
   try { res.json(bulkAll.cancel()); } catch (err) { next(err); }
 };
 
+const setStar = async (req, res, next) => {
+  try {
+    const { isStarred, starNote } = req.body;
+    const n = await service.setStar(req.params.id, isStarred, starNote);
+    res.json({ updated: n, isStarred, starNote });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
-  list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors, setIgnored,
+  list, getOne, fetchOne, deleteOne, deleteAll, inventoryErrors, setIgnored, setStar,
   fetchAllStart, fetchAllStatus, fetchAllCancel,
 };

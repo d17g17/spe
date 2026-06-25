@@ -82,6 +82,7 @@ mountFeature('/api/cs2',      './src/features/cs2/routes');
 mountFeature('/api/prices',   './src/features/prices/routes');
 mountFeature('/api/proxies',  './src/features/proxies/routes');
 mountFeature('/api/breach',   './src/features/breach/routes');
+mountFeature('/api/crawl',    './src/features/crawl/routes');
 
 const mountFailed = mountResults.filter((r) => !r.ok);
 if (mountFailed.length > 0) {

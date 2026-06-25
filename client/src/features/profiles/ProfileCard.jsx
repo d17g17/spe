@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatRelative, formatDate } from '../../utils/format.js';
 import Flag from '../../components/Flag.jsx';
-import { useDeleteProfile, useFetchProfile, useIgnoreProfile } from './useProfiles.js';
+import { useDeleteProfile, useFetchProfile, useIgnoreProfile, useStarProfile } from './useProfiles.js';
 import { useFetchCS2 } from '../cs2/useCS2Inventory.js';
 import { useNotifications } from '../../state/NotificationContext.jsx';
 import InventoryBadge from '../cs2/InventoryBadge.jsx';
@@ -47,6 +47,7 @@ const isUsefulName = (name, steamId) => {
 export default function ProfileCard({ profile }) {
   const { mutate: deleteOne } = useDeleteProfile();
   const { mutate: setIgnored } = useIgnoreProfile();
+  const { mutate: setStar } = useStarProfile();
   const fetchProfile = useFetchProfile();
   const fetchCs2 = useFetchCS2();
   const { success, error } = useNotifications();
@@ -160,6 +161,13 @@ export default function ProfileCard({ profile }) {
           </div>
         </div>
         <div className="flex flex-col items-center gap-1 shrink-0">
+          <button
+            onClick={() => setStar({ id: profile.steamId, isStarred: !profile.isStarred, starNote: profile.starNote })}
+            title={profile.isStarred ? 'Unstar' : 'Star'}
+            className={`text-sm ${profile.isStarred ? 'text-amber-400 hover:text-amber-300' : 'text-gray-500 hover:text-amber-400'}`}
+          >
+            ★
+          </button>
           <button
             onClick={onRefresh}
             disabled={refreshing}

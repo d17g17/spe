@@ -25,6 +25,7 @@ export const api = {
     delete: (id) => unwrap(apiClient.delete(`/profiles/${enc(id)}`)),
     deleteAll: () => unwrap(apiClient.delete('/profiles')),
     setIgnored: (id, ignored) => unwrap(apiClient.put(`/profiles/${enc(id)}/ignored`, { ignored })),
+    setStar: (id, isStarred, starNote) => unwrap(apiClient.put(`/profiles/${enc(id)}/star`, { isStarred, starNote })),
     inventoryErrors: (steamIds) => unwrap(apiClient.post('/profiles/inventory-errors', { steamIds })),
     fetchAllStart: (opts = {}) => unwrap(apiClient.post('/profiles/fetch-all', opts)),
     fetchAllStatus: () => unwrap(apiClient.get('/profiles/fetch-all/status')),
@@ -82,6 +83,12 @@ export const api = {
     cacheSave: (profileId, items) => unwrap(apiClient.post('/breach/cache', { profileId, items })),
     cacheDelete: (id) => unwrap(apiClient.delete(`/breach/cache/${enc(id)}`)),
     cacheClearProfile: (steamId) => unwrap(apiClient.delete(`/breach/cache/profile/${enc(steamId)}`)),
+  },
+  crawl: {
+    start: (steamId, options) => unwrap(apiClient.post('/crawl/start', { steamId, options })),
+    status: (steamId) => unwrap(apiClient.get(`/crawl/${enc(steamId)}/status`)),
+    cancel: (steamId) => unwrap(apiClient.post(`/crawl/${enc(steamId)}/cancel`)),
+    active: () => unwrap(apiClient.get('/crawl/active')),
   },
   health: () => unwrap(apiClient.get('/health')),
 };

@@ -56,6 +56,16 @@ export const useIgnoreProfile = () => {
   });
 };
 
+export const useStarProfile = () => {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, isStarred, starNote }) => api.profiles.setStar(id, isStarred, starNote),
+    onSuccess: (data, variables) => {
+      qc.invalidateQueries({ queryKey: ['profiles'] });
+    },
+  });
+};
+
 export const useDeleteAllProfiles = () => {
   const qc = useQueryClient();
   return useMutation({

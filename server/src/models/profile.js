@@ -49,6 +49,8 @@ module.exports = (sequelize, DataTypes) => {
       gcPlayerId: { type: DataTypes.STRING(32), allowNull: true, field: 'gc_player_id' },
       gcChecked: { type: DataTypes.DATE, allowNull: true, field: 'gc_checked' },
       ignored: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      isStarred: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
+      starNote: { type: DataTypes.TEXT, allowNull: true },
     },
     { sequelize, modelName: 'Profile' }
   );

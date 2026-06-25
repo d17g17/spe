@@ -14,6 +14,7 @@ router.post('/fetch-all/cancel', c.fetchAllCancel);
 
 router.get('/:id/fetch', c.fetchOne);
 router.put('/:id/ignored', c.setIgnored);
+router.put('/:id/star', c.setStar);
 router.get('/:id', c.getOne);
 router.delete('/:id', c.deleteOne);
 

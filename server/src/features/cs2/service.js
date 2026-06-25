@@ -68,7 +68,8 @@ const upsert = async (profileId, payload) => {
   return getStored(profileId);
 };
 
-const fetchAndStore = async (profileId) => {
+const fetchAndStore = async (profileId, options = {}) => {
+  const { persist = true } = options;
   const t0 = Date.now();
   const existing = await getStored(profileId);
   const hasGoodPrior = existing && (existing.status === 'checked' || existing.status === 'empty');
@@ -83,7 +84,7 @@ const fetchAndStore = async (profileId) => {
       );
       return getStored(profileId);
     }
-    return upsert(profileId, {
+    const payload = {
       status: 'error',
       skipReason: resp.reason || null,
       totalValueUsd: 0,
@@ -92,7 +93,8 @@ const fetchAndStore = async (profileId) => {
       top5TradableItems: [],
       lastChecked: new Date(),
       processingTimeMs: Date.now() - t0,
-    });
+    };
+    return persist ? upsert(profileId, payload) : payload;
   }
   if (resp.status === 'private') {
     if (hasGoodPrior) {
@@ -103,7 +105,7 @@ const fetchAndStore = async (profileId) => {
       );
       return getStored(profileId);
     }
-    return upsert(profileId, {
+    const payload = {
       status: 'private',
       skipReason: resp.reason || null,
       totalValueUsd: 0,
@@ -112,10 +114,11 @@ const fetchAndStore = async (profileId) => {
       top5TradableItems: [],
       lastChecked: new Date(),
       processingTimeMs: Date.now() - t0,
-    });
+    };
+    return persist ? upsert(profileId, payload) : payload;
   }
   if (resp.status === 'empty') {
-    return upsert(profileId, {
+    const payload = {
       status: 'empty',
       totalValueUsd: 0,
       tradableItemsCount: 0,
@@ -123,7 +126,8 @@ const fetchAndStore = async (profileId) => {
       top5TradableItems: [],
       lastChecked: new Date(),
       processingTimeMs: Date.now() - t0,
-    });
+    };
+    return persist ? upsert(profileId, payload) : payload;
   }
 
   const processed = processInventory(resp);
@@ -246,12 +250,12 @@ const fetchAndStore = async (profileId) => {
 
   const rareTags = computeRareTags(items);
 
-  return upsert(profileId, {
+  const payload = {
     status: 'checked',
     totalValueUsd: Number(totalValue.toFixed(2)),
     totalValueWithStickersUsd: totalValueWithStickers,
-    tradableItemsCount: processed.tradable,
-    totalItemsCount: processed.total,
+    tradableItemsCount: tradableUnique,
+    totalItemsCount: items.length,
     top5TradableItems: top5,
     notableItems: notable,
     rareTags,
@@ -259,7 +263,8 @@ const fetchAndStore = async (profileId) => {
     items,
     lastChecked: new Date(),
     processingTimeMs: Date.now() - t0,
-  });
+  };
+  return persist ? upsert(profileId, payload) : payload;
 };
 
 const stats = async () => {
@@ -270,4 +275,4 @@ const stats = async () => {
   return { total, checked, private: priv, error: err };
 };
 
-module.exports = { getStored, fetchAndStore, stats };
+module.exports = { getStored, fetchAndStore, upsert, stats };

@@ -27,6 +27,14 @@ const setIgnored = async (steamId, ignored) => {
   return n;
 };
 
+const setStar = async (steamId, isStarred, starNote) => {
+  const [n] = await models.Profile.update(
+    { isStarred: Boolean(isStarred), starNote: starNote || null },
+    { where: { steamId } }
+  );
+  return n;
+};
+
 const buildWhere = (filters = {}, search = '') => {
   const where = {};
   // Hide ignored profiles by default; opt-in via filters.includeIgnored.
@@ -47,6 +55,7 @@ const buildWhere = (filters = {}, search = '') => {
   if (filters.visibilityState != null) where.communityVisibilityState = Number(filters.visibilityState);
   if (filters.minFriends != null) where.friendsCount = { ...(where.friendsCount || {}), [Op.gte]: Number(filters.minFriends) };
   if (filters.maxFriends != null) where.friendsCount = { ...(where.friendsCount || {}), [Op.lte]: Number(filters.maxFriends) };
+  if (filters.isStarred) where.isStarred = true;
   return where;
 };
 
@@ -123,4 +132,11 @@ const findWithInventoryError = async (steamIds) => {
   return rows.map((r) => r.toJSON());
 };
 
-module.exports = { findById, upsert, deleteById, deleteAll, list, listIds, findWithInventoryError, setIgnored, sequelize };
+const bulkUpsertProfiles = async (shapes) => {
+  if (!shapes || shapes.length === 0) return [];
+  const fields = Object.keys(shapes[0]).filter(k => k !== 'steamId' && k !== 'createdAt');
+  await models.Profile.bulkCreate(shapes, { updateOnDuplicate: fields });
+  return shapes;
+};
+
+module.exports = { findById, upsert, bulkUpsertProfiles, deleteById, deleteAll, list, listIds, findWithInventoryError, setIgnored, setStar, sequelize };

@@ -5,6 +5,8 @@ import Sidebar from './components/Sidebar.jsx';
 import Toaster from './components/Toaster.jsx';
 import ProfilesPage from './features/profiles/ProfilesPage.jsx';
 import ProfilePage from './features/profile/ProfilePage.jsx';
+import CrawlPage from './features/crawl/CrawlPage.jsx';
+import StarredPage from './features/profiles/StarredPage.jsx';
 import NotFoundPage from './pages/NotFoundPage.jsx';
 
 export default function App() {
@@ -18,6 +20,8 @@ export default function App() {
             <Routes location={location} key={location.pathname}>
               <Route path="/" element={<ProfilesPage />} />
               <Route path="/profile/:steamId" element={<ProfilePage />} />
+              <Route path="/crawl" element={<CrawlPage />} />
+              <Route path="/starred" element={<StarredPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </AnimatePresence>

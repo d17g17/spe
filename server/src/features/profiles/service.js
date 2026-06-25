@@ -114,6 +114,7 @@ const list = (opts) => repo.list(opts);
 const withInventoryErrors = (ids) => repo.findWithInventoryError(ids);
 
 const setIgnored = (steamId, ignored) => repo.setIgnored(steamId, ignored);
+const setStar = (steamId, isStarred, starNote) => repo.setStar(steamId, isStarred, starNote);
 
 module.exports = {
   getOrFetch,
@@ -125,5 +126,6 @@ module.exports = {
   list,
   withInventoryErrors,
   setIgnored,
+  setStar,
   fetchFullFromSteam,
 };
